@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<launch>
+    <node pkg="osm_planner" name="test_osm" type="test_osm" output="screen"/>
+    <param name="filepath" value="$(find osm_planner)/osm_example/botanicka.osm"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find osm_planner)/rviz/test.rviz" required="true"/>
+
+</launch>

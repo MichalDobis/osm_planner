@@ -1,0 +1,116 @@
+//
+// Created by michal on 30.12.2016.
+//
+#include <osm_planner/dijkstra.h>
+
+// Funtion that implements Dijkstra's single source shortest path
+// algorithm for a graph represented using adjacency matrix
+// representation
+Dijkstra::Dijkstra(std::vector <std::vector<double> > graph):
+
+        parent(graph.size()),    // Parent array to store shortest path tree
+        dist(graph.size())      // The output array. dist[i] will hold
+                                // the shortest distance from src to i
+
+{
+
+    this->graph = graph;
+}
+
+std::vector<int> Dijkstra::findShortestPath(int src, int target){
+
+    this->source = src;
+    // sptSet[i] will true if vertex i is included / in shortest
+    // path tree or shortest distance from src to i is finalized
+    bool sptSet[graph.size()];
+
+    // Initialize all distances as INFINITE and stpSet[] as false
+    for (int i = 0; i < graph.size(); i++)
+    {
+        parent[0] = -1;
+        dist[i] = 1000.0; //INT_MAX
+        sptSet[i] = false;
+    }
+
+    // Distance of source vertex from itself is always 0
+    dist[src] = 0;
+
+    // Find shortest path for all vertices
+    for (int count = 0; count < graph.size()-1; count++)
+    {
+        // Pick the minimum distance vertex from the set of
+        // vertices not yet processed. u is always equal to src
+        // in first iteration.
+        int u = minDistance(dist, sptSet);
+
+        // Mark the picked vertex as processed
+        sptSet[u] = true;
+
+        // Update dist value of the adjacent vertices of the
+        // picked vertex.
+        for (int v = 0; v < graph.size(); v++)
+
+            // Update dist[v] only if is not in sptSet, there is
+            // an edge from u to v, and total weight of path from
+            // src to v through u is smaller than current value of
+            // dist[v]
+            if (!sptSet[v] && graph[u][v] &&
+                dist[u] + graph[u][v] < dist[v])
+            {
+                parent[v] = u;
+                dist[v] = dist[u] + graph[u][v];
+
+            }
+    }
+
+    // print the constructed distance array
+    return getSolution(target);
+    //printSolution(dist, parent);
+}
+
+
+int Dijkstra::minDistance(std::vector<double> dist, bool sptSet[])
+{
+    // Initialize min value
+    int min = 1000.0, min_index; //INT_MAX
+
+    for (int v = 0; v < dist.size(); v++)
+        if (sptSet[v] == false && dist[v] <= min)
+            min = dist[v], min_index = v;
+
+    return min_index;
+}
+
+// Function to print shortest path from source to j
+// using parent array
+void Dijkstra::printPath(std::vector<int> parent, int j)
+{
+    // Base Case : If j is source
+    if (parent[j]==-1)
+        return;
+
+    printPath(parent, parent[j]);
+
+    path.push_back(j);
+}
+
+// A utility function to print the constructed distance
+// array
+
+std::vector<int> Dijkstra::getSolution(int target) {
+
+    path.clear();
+
+    for (int i = 1; i < dist.size(); i++) {
+
+        if (i == target) {
+            if (dist[i] == 1000.0) {
+                return path;
+            }
+            path.push_back(source);
+            printPath(parent, i);
+        }
+    }
+
+    return path;
+}
