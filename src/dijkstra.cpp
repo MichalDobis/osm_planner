@@ -64,6 +64,7 @@ std::vector<int> Dijkstra::findShortestPath(int src, int target){
     }
 
     // print the constructed distance array
+    printf("\ngetting solution\n");
     return getSolution(target);
     //printSolution(dist, parent);
 }
@@ -89,6 +90,9 @@ void Dijkstra::printPath(std::vector<int> parent, int j)
     if (parent[j]==-1)
         return;
 
+    printf("\nprintf path %d\n", j);
+
+    //todo zistit ako to tu funguje pada to tu
     printPath(parent, parent[j]);
 
     path.push_back(j);
@@ -108,6 +112,7 @@ std::vector<int> Dijkstra::getSolution(int target) {
                 return path;
             }
             path.push_back(source);
+
             printPath(parent, i);
         }
     }
