@@ -32,9 +32,13 @@ public:
 
     OsmParser(std::string xml);
     std::vector< std::vector<double> > getGraphOfVertex();
-    void publishMarker();
+
+    void publishPoint(int pointID, visualization_msgs::Marker::_color_type color);
+    void publishPoint(double longitude, double latitude, visualization_msgs::Marker::_color_type color);
     void publishPath();
     void publishPath(std::vector<int> nodesInPath);
+
+    int getNearestPoint(double lat, double lon);
 
 protected:
 

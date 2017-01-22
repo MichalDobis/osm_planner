@@ -47,66 +47,105 @@ OsmParser::OsmParser(std::string xml){
         createNetwork();
     }
 
+void OsmParser::publishPoint(double longitude, double latitude, visualization_msgs::Marker::_color_type color){
 
-    //publishing all osm nodes
-    void OsmParser::publishMarker(){
-        visualization_msgs::Marker marker, line_strip, line_list;
-        marker.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = "/map";
-        marker.header.stamp = line_strip.header.stamp = line_list.header.stamp = ros::Time::now();
-        marker.ns = line_strip.ns = line_list.ns = "work_space";
-        marker.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;
-        marker.pose.orientation.w = line_strip.pose.orientation.w = line_list.pose.orientation.w = 1.0;
+    visualization_msgs::Marker marker, line_strip, line_list;
+    marker.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = "/map";
+    marker.header.stamp = line_strip.header.stamp = line_list.header.stamp = ros::Time::now();
+    marker.ns = line_strip.ns = line_list.ns = "work_space";
+    marker.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;
+    marker.pose.orientation.w = line_strip.pose.orientation.w = line_list.pose.orientation.w = 1.0;
 
-        marker.id = 0;
-        line_list.id = 2;
+    static long id  = 0;
+    marker.id = id++;
 
-        marker.type = visualization_msgs::Marker::POINTS;
-        line_list.type = visualization_msgs::Marker::ARROW;
+    line_list.id = 2;
 
-        line_list.scale.x = 0.05;
-        line_list.scale.y = 0.05;
-        line_list.scale.z = 0.05;
+    marker.type = visualization_msgs::Marker::POINTS;
+    line_list.type = visualization_msgs::Marker::ARROW;
 
-        line_list.color.r = 1.0f;
-        line_list.color.g = 0.0f;
-        line_list.color.b = 0.0f;
-        line_list.color.a = 1.0;
+    line_list.scale.x = 0.05;
+    line_list.scale.y = 0.05;
+    line_list.scale.z = 0.05;
 
-        line_list.lifetime = ros::Duration(10);
+    line_list.color.r = 1.0f;
+    line_list.color.g = 0.0f;
+    line_list.color.b = 0.0f;
+    line_list.color.a = 1.0;
 
-        marker.scale.x = 0.05;
-        marker.scale.y = 0.05;
-        marker.scale.z = 0.05;
+    line_list.lifetime = ros::Duration(10);
 
-        marker.color.r = 0.0f;
-        marker.color.g = 0.0f;
-        marker.color.b = 1.0f;
-        marker.color.a = 1.0;
+    marker.scale.x = 0.1;
+    marker.scale.y = 0.1;
+    marker.scale.z = 0.1;
 
-        marker.lifetime = ros::Duration(100);
-        geometry_msgs::Point point;
-        point.z = 0;
 
-        float lat, lon, latZero, lonZero;
+    marker.color = color;
+    marker.lifetime = ros::Duration(100);
+    geometry_msgs::Point point;
+    point.z = 0;
 
-        latZero = nodes[0].latitude;
-        lonZero = nodes[0].longitude;
-        point.x = 0;
-        point.y = 0;
+    double latZero = nodes[0].latitude;
+    double lonZero = nodes[0].longitude;
+    point.x = 0;
+    point.y = 0;
 
-        for (int i = 0; i < nodes.size(); i++) {
+    point.x = (lonZero - longitude) * 1000;
+    point.y = (latZero - latitude) * 1000;
 
-            lat = nodes[i].latitude;
-            lon = nodes[i].longitude;
+    marker.points.push_back(point);
+    marker_pub.publish(marker);
+}
 
-            point.x = (lonZero - lon) * 1000;
-            point.y = (latZero - lat) * 1000;
 
-            marker.points.push_back(point);
-            //	ROS_INFO("lat %f lon %f",lat, lon);
-        }
 
-        marker_pub.publish(marker);
+void OsmParser::publishPoint(int pointID, visualization_msgs::Marker::_color_type color) {
+
+    visualization_msgs::Marker marker, line_strip, line_list;
+    marker.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = "/map";
+    marker.header.stamp = line_strip.header.stamp = line_list.header.stamp = ros::Time::now();
+    marker.ns = line_strip.ns = line_list.ns = "work_space";
+    marker.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;
+    marker.pose.orientation.w = line_strip.pose.orientation.w = line_list.pose.orientation.w = 1.0;
+
+    marker.id = 0;
+    line_list.id = 2;
+
+    marker.type = visualization_msgs::Marker::POINTS;
+    line_list.type = visualization_msgs::Marker::ARROW;
+
+    line_list.scale.x = 0.05;
+    line_list.scale.y = 0.05;
+    line_list.scale.z = 0.05;
+
+    line_list.color.r = 1.0f;
+    line_list.color.g = 0.0f;
+    line_list.color.b = 0.0f;
+    line_list.color.a = 1.0;
+
+    line_list.lifetime = ros::Duration(10);
+
+    marker.scale.x = 0.1;
+    marker.scale.y = 0.1;
+    marker.scale.z = 0.1;
+
+
+    marker.color = color;
+    marker.lifetime = ros::Duration(100);
+    geometry_msgs::Point point;
+    point.z = 0;
+
+    double latZero = nodes[0].latitude;
+    double lonZero = nodes[0].longitude;
+    point.x = 0;
+    point.y = 0;
+
+    point.x = (lonZero - nodes[pointID].longitude) * 1000;
+    point.y = (latZero - nodes[pointID].latitude) * 1000;
+
+    marker.points.push_back(point);
+    marker_pub.publish(marker);
+}
 
 
         //vykreslenie lokalizacie
@@ -134,7 +173,7 @@ OsmParser::OsmParser(std::string xml){
         marker.points.push_back(point);
         marker_pub.publish(marker);
 */
-    }
+
 
 //publishing all paths
     void OsmParser::publishPath(){
@@ -202,24 +241,30 @@ std::vector< std::vector<double> > OsmParser::getGraphOfVertex(){
     return networkArray;
 }
 
-    /*void setLocale(OSM_NODE *position){
+int OsmParser::getNearestPoint(double lat, double lon){
 
-        OSM_NODE test = *position;
-        double distance = getDistance(*position, nodes[0]);
-        double minDistance = distance;
-        memcpy(position, &nodes[0], sizeof(OSM_NODE));
+    OSM_NODE point;
+    point.longitude = lon;
+    point.latitude = lat;
+    point.id = 0;
 
-        for (int i = 0; i < nodes.size(); i++){
-            distance = getDistance(*position, nodes[i]);
-            if (minDistance > distance){
-                minDistance = distance;
-                memcpy(&test, &nodes[i], sizeof(OSM_NODE));
-            }
+    double distance = getDistance(point, nodes[0]);
+    double minDistance = distance;
 
+
+    for (int i = 0; i < nodes.size(); i++){
+       distance = getDistance(point, nodes[i]);
+
+        if (minDistance > distance){
+           minDistance = distance;
+           point.id = nodes[i].id;
         }
-        memcpy(position, &test, sizeof(OSM_NODE));
+
     }
-*/
+
+    return point.id;
+}
+
 
 //protected function
 
