@@ -13,6 +13,7 @@ OsmParser::OsmParser(std::string xml){
         path_pub = n.advertise<nav_msgs::Path>("path", 10);
         shortest_path_pub = n.advertise<nav_msgs::Path>("shortest_path", 10);
 
+
         TiXmlDocument doc(xml);
         TiXmlNode* osm;
         TiXmlNode* node;
@@ -46,6 +47,9 @@ OsmParser::OsmParser(std::string xml){
         createNodes(&hRootNode);
         createNetwork();
     }
+
+
+        /**PUBLISHING FUNCTIONS**/
 
 void OsmParser::publishPoint(double latitude, double longitude, visualization_msgs::Marker::_color_type color){
 
@@ -82,16 +86,14 @@ void OsmParser::publishPoint(double latitude, double longitude, visualization_ms
 
     marker.color = color;
     marker.lifetime = ros::Duration(100);
+
     geometry_msgs::Point point;
     point.z = 0;
-
-    double latZero = nodes[0].latitude;
-    double lonZero = nodes[0].longitude;
     point.x = 0;
     point.y = 0;
 
-    point.x = (lonZero - longitude) * 1000;
-    point.y = (latZero - latitude) * 1000;
+    point.x = (startPoint.longitude - longitude) * 1000;
+    point.y = (startPoint.latitude - latitude) * 1000;
 
     marker.points.push_back(point);
     marker_pub.publish(marker);
@@ -132,47 +134,18 @@ void OsmParser::publishPoint(int pointID, visualization_msgs::Marker::_color_typ
 
     marker.color = color;
     marker.lifetime = ros::Duration(100);
+
     geometry_msgs::Point point;
     point.z = 0;
-
-    double latZero = nodes[0].latitude;
-    double lonZero = nodes[0].longitude;
     point.x = 0;
     point.y = 0;
 
-    point.x = (lonZero - nodes[pointID].longitude) * 1000;
-    point.y = (latZero - nodes[pointID].latitude) * 1000;
+    point.x = (startPoint.longitude - nodes[pointID].longitude) * 1000;
+    point.y = (startPoint.latitude - nodes[pointID].latitude) * 1000;
 
     marker.points.push_back(point);
     marker_pub.publish(marker);
 }
-
-
-        //vykreslenie lokalizacie
-        /*marker.points.clear();
-        marker.scale.x = 0.1;
-        marker.scale.y = 0.1;
-        marker.scale.z = 0.1;
-
-        marker.color.r = 1.0f;
-        marker.color.g = 0.0f;
-        marker.color.b = 0.0f;
-        marker.color.a = 1.0;
-
-        OSM_NODE testLocale;
-        testLocale.latitude = 48.1464707;
-        testLocale.longitude = 17.0526409;
-
-        //setLocale(&testLocale);
-
-        //ROS_INFO("new pos  lat %f  lon %f", testLocale.latitude,
-        //		testLocale.longitude);
-        point.x = (lonZero - lon) * 1000;
-        point.y = (latZero - lat) * 1000;
-
-        marker.points.push_back(point);
-        marker_pub.publish(marker);
-*/
 
 
 //publishing all paths
@@ -181,22 +154,19 @@ void OsmParser::publishPoint(int pointID, visualization_msgs::Marker::_color_typ
         OSM_NODE testNode;
         nav_msgs::Path path;
         path.header.frame_id = "/map";
+
         geometry_msgs::PoseStamped pose;
         pose.pose.position.x = 0;
         pose.pose.position.y = 0;
         pose.pose.position.z = 0;
-        float latZero, lonZero;
-
-        latZero = nodes[0].latitude;
-        lonZero = nodes[0].longitude;
 
         for (int i = 0; i < ways.size(); i++){
             path.poses.clear();
 
             for (int j = 0; j < ways[i].nodesId.size(); j++){
 
-                pose.pose.position.x = (lonZero - nodes[ways[i].nodesId[j]].longitude) * 1000;
-                pose.pose.position.y = (latZero - nodes[ways[i].nodesId[j]].latitude) * 1000;
+                pose.pose.position.x = (startPoint.longitude - nodes[ways[i].nodesId[j]].longitude) * 1000;
+                pose.pose.position.y = (startPoint.latitude - nodes[ways[i].nodesId[j]].latitude) * 1000;
                 path.poses.push_back(pose);
 
             }
@@ -214,20 +184,14 @@ void OsmParser::publishPath(std::vector<int> nodesInPath) {
     sh_path.header.frame_id = "/map";
 
     geometry_msgs::PoseStamped pose;
-
     pose.pose.position.x = 0;
     pose.pose.position.y = 0;
     pose.pose.position.z = 0;
-    float latZero, lonZero;
-
-    latZero = nodes[0].latitude;
-    lonZero = nodes[0].longitude;
-
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
-        pose.pose.position.x = (lonZero - nodes[nodesInPath[i]].longitude) * 1000;
-        pose.pose.position.y = (latZero - nodes[nodesInPath[i]].latitude) * 1000;
+        pose.pose.position.x = (startPoint.longitude - nodes[nodesInPath[i]].longitude) * 1000;
+        pose.pose.position.y = (startPoint.latitude - nodes[nodesInPath[i]].latitude) * 1000;
         sh_path.poses.push_back(pose);
     }
 
@@ -245,27 +209,24 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
     pose.pose.position.x = 0;
     pose.pose.position.y = 0;
     pose.pose.position.z = 0;
-    float latZero, lonZero;
-
-    latZero = nodes[0].latitude;
-    lonZero = nodes[0].longitude;
-
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
-        pose.pose.position.x = (lonZero - nodes[nodesInPath[i]].longitude) * 1000;
-        pose.pose.position.y = (latZero - nodes[nodesInPath[i]].latitude) * 1000;
+        pose.pose.position.x = (startPoint.longitude - nodes[nodesInPath[i]].longitude) * 1000;
+        pose.pose.position.y = (startPoint.latitude - nodes[nodesInPath[i]].latitude) * 1000;
         sh_path.poses.push_back(pose);
     }
 
-    pose.pose.position.x = (lonZero - target_lon) * 1000;
-    pose.pose.position.y = (latZero - target_lat) * 1000;
+    pose.pose.position.x = (startPoint.longitude - target_lon) * 1000;
+    pose.pose.position.y = (startPoint.latitude - target_lat) * 1000;
 
     sh_path.poses.push_back(pose);
 
     shortest_path_pub.publish(sh_path);
 
 }
+
+        /* GETTERS */
 
 //getter for dijkstra algorithm
 std::vector< std::vector<double> > OsmParser::getGraphOfVertex(){
@@ -294,6 +255,15 @@ int OsmParser::getNearestPoint(double lat, double lon){
     }
 
     return point.id;
+}
+
+        /* SETTERS */
+
+void OsmParser::setStartPoint(double latitude, double longitude){
+
+    this->startPoint.id = 0;
+    this->startPoint.latitude = latitude;
+    this->startPoint.longitude = longitude;
 }
 
 

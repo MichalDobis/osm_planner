@@ -31,15 +31,20 @@ public:
     } TRANSLATE_TABLE;
 
     OsmParser(std::string xml);
-    std::vector< std::vector<double> > getGraphOfVertex();
 
+    //publishing functions
     void publishPoint(int pointID, visualization_msgs::Marker::_color_type color);
     void publishPoint(double latitude, double longitude, visualization_msgs::Marker::_color_type color);
     void publishPath();
     void publishPath(std::vector<int> nodesInPath);
     void publishPath(std::vector<int> nodesInPath, double target_lat, double target_lon);
 
-    int getNearestPoint(double lat, double lon);
+    //GETTERS
+    std::vector< std::vector<double> > getGraphOfVertex(); //for dijkstra algorithm
+    int getNearestPoint(double lat, double lon); //return OSM node ID
+
+    //SETTERS
+    void setStartPoint(double latitude, double longitude); //set the zero cartezian point
 
 protected:
 
@@ -48,17 +53,22 @@ protected:
 
 private:
 
-    TiXmlDocument *doc;
+    //publishers
     ros::Publisher marker_pub;
     ros::Publisher path_pub;
     ros::Publisher shortest_path_pub;
 
+    //msgs for shortest path
     nav_msgs::Path sh_path;
 
+    //vector arrays of OSM nodes and ways
     std::vector <OSM_WAY> ways;
     std::vector <OSM_NODE> nodes;
     std::vector <TRANSLATE_TABLE> table;
     std::vector <std::vector <double> > networkArray;
+
+    //start point - must be set and than you can publishing paths
+    OSM_NODE startPoint;
 
     void createWays(TiXmlHandle* hRootWay);
     void createNodes(TiXmlHandle *hRootNode);

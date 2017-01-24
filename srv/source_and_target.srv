@@ -1,4 +1,0 @@
-sensor_msgs/NavSatFix source
-sensor_msgs/NavSatFix target
----
-bool success

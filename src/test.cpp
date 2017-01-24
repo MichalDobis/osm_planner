@@ -14,17 +14,15 @@
 
 //todo
 //1. zistit preco pada pri hladany cesty v nejakom pripade  (sad_janka_krala.osm)
-//2. treba urcit pociatocny bod [0,0] - asi prva suradnica, ktoru precita.
-//   Do gpsCallback treba pridat nejaku funkciu, ktora urci pociatocny bod z prvej suradnice a ulozi ju do globalnej premennej OsmParser
-//3. zvazit, ci nebude treba pouzivat action server
-//4. preplanovanie trajektorie a odstranenie uzlu cez, ktory sa neda ist
-//5. prepocitat zemepisne suradnice na kartezke - zatial je tam len vzorec x = (lon2 - lon1) * 1000; lon1 je bod v 0
+//2. zvazit, ci nebude treba pouzivat action server
+//3. preplanovanie trajektorie a odstranenie uzlu cez, ktory sa neda ist
+//4. prepocitat zemepisne suradnice na kartezke - zatial je tam len vzorec x = (lon2 - lon1) * 1000; lon1 je bod v 0
 
 class OsmPlanner{
 public:
     OsmPlanner(std::string file) :
             osm(file),
-            dijkstra(osm.getGraphOfVertex()), targetID(100), sourceID(130)
+            dijkstra(osm.getGraphOfVertex()), targetID(100), sourceID(130), initialized(false)
     {
 
         //init ros topics and services
@@ -49,8 +47,6 @@ public:
         colorTarget.b = 0.0f;
         colorTarget.a = 1.0;
 
-        //draw paths network
-        osm.publishPath();
 
         //****************TEST PLANNING PATH FROM PARAM**********************//
         //-------------------------------------------------------------------//
@@ -64,8 +60,14 @@ public:
 
         sourceID = osm.getNearestPoint(source_lat, source_lon);
         ROS_INFO("source ID %d", sourceID);
+        osm.setStartPoint(source_lat, source_lon);
         osm.publishPoint(sourceID, colorPosition);
         sleep(1);
+
+        //draw paths network
+        osm.publishPath();
+        sleep(1);
+
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
         ROS_INFO("target ID %d", targetID);
         osm.publishPoint(targetID, colorTarget);
@@ -75,6 +77,8 @@ public:
 
         //planning and publish final path
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
+
+        initialized = true;
         //-------------------------------------------------------------------//
     }
 private:
@@ -84,6 +88,8 @@ private:
 
     int sourceID;
     int targetID;
+
+    bool initialized;
 
     double target_longitude;
     double target_latitude;
@@ -142,6 +148,8 @@ private:
         double lat = msg->latitude;
         double lon = msg->longitude;
 
+        if (!initialized) init(lat, lon);
+
         osm.publishPoint(lat, lon, colorTarget);
         sourceID = osm.getNearestPoint(lat, lon);
 
@@ -149,6 +157,19 @@ private:
 
         osm.publishPoint(sourceID, colorPosition);
     }
+
+    void init(double lat, double lon){
+
+        ROS_INFO("source ID %d", sourceID);
+        osm.setStartPoint(lat, lon);
+        osm.publishPoint(lat, lon, colorPosition);
+
+        //draw paths network
+        osm.publishPath();
+
+        initialized = true;
+    }
+
 };
 
 
