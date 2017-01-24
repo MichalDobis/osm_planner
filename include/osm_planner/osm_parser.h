@@ -34,9 +34,10 @@ public:
     std::vector< std::vector<double> > getGraphOfVertex();
 
     void publishPoint(int pointID, visualization_msgs::Marker::_color_type color);
-    void publishPoint(double longitude, double latitude, visualization_msgs::Marker::_color_type color);
+    void publishPoint(double latitude, double longitude, visualization_msgs::Marker::_color_type color);
     void publishPath();
     void publishPath(std::vector<int> nodesInPath);
+    void publishPath(std::vector<int> nodesInPath, double target_lat, double target_lon);
 
     int getNearestPoint(double lat, double lon);
 

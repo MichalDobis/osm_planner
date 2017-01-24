@@ -47,7 +47,7 @@ OsmParser::OsmParser(std::string xml){
         createNetwork();
     }
 
-void OsmParser::publishPoint(double longitude, double latitude, visualization_msgs::Marker::_color_type color){
+void OsmParser::publishPoint(double latitude, double longitude, visualization_msgs::Marker::_color_type color){
 
     visualization_msgs::Marker marker, line_strip, line_list;
     marker.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = "/map";
@@ -231,7 +231,38 @@ void OsmParser::publishPath(std::vector<int> nodesInPath) {
         sh_path.poses.push_back(pose);
     }
 
-    usleep(300000);
+    shortest_path_pub.publish(sh_path);
+}
+
+//publishing defined path with target geographic point
+void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, double target_lon) {
+
+    sh_path.poses.clear();
+    sh_path.header.frame_id = "/map";
+
+    geometry_msgs::PoseStamped pose;
+
+    pose.pose.position.x = 0;
+    pose.pose.position.y = 0;
+    pose.pose.position.z = 0;
+    float latZero, lonZero;
+
+    latZero = nodes[0].latitude;
+    lonZero = nodes[0].longitude;
+
+
+    for (int i = 0; i < nodesInPath.size(); i++) {
+
+        pose.pose.position.x = (lonZero - nodes[nodesInPath[i]].longitude) * 1000;
+        pose.pose.position.y = (latZero - nodes[nodesInPath[i]].latitude) * 1000;
+        sh_path.poses.push_back(pose);
+    }
+
+    pose.pose.position.x = (lonZero - target_lon) * 1000;
+    pose.pose.position.y = (latZero - target_lat) * 1000;
+
+    sh_path.poses.push_back(pose);
+
     shortest_path_pub.publish(sh_path);
 
 }
