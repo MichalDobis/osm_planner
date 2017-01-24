@@ -8,21 +8,19 @@
 #include <ros/ros.h>
 #include <osm_planner/dijkstra.h>
 #include <osm_planner/osm_parser.h>
-#include <osm_planner/source_and_target.h>
+#include <osm_planner/newTarget.h>
 #include <std_msgs/Int32.h>
 #include <std_srvs/Empty.h>
-#include <sensor_msgs/NavSatFix.h>
 
 //todo
 //1. zistit preco pada pri hladany cesty v nejakom pripade  (sad_janka_krala.osm)
 //2. pretestovat funkciu OsmParser::getNearestPoint()
-//3. presne lokalizovat ciel na mape
-//4. noda publikuje body [x,y] - suradnice osm uzlov (nodes) + treba ako posledny bod doplnit bod z ciela (predposledny bude posledny osm uzol)
-//5. treba urcit pociatocny bod [0,0] - asi prva suradnica, ktoru precita.
+//3. noda publikuje body [x,y] - suradnice osm uzlov (nodes) + treba ako posledny bod doplnit bod z ciela (predposledny bude posledny osm uzol)
+//4. treba urcit pociatocny bod [0,0] - asi prva suradnica, ktoru precita.
 //   Do gpsCallback treba pridat nejaku funkciu, ktora urci pociatocny bod z prvej suradnice a ulozi ju do globalnej premennej OsmParser
-//6. zvazit, ci nebude treba pouzivat action server
-//7. preplanovanie trajektorie a odstranenie uzlu cez, ktory sa neda ist
-//8. prepocitat zemepisne suradnice na kartezke - zatial je tam len vzorec x = (lon2 - lon1) * 1000; lon1 je bod v 0
+//5. zvazit, ci nebude treba pouzivat action server
+//6. preplanovanie trajektorie a odstranenie uzlu cez, ktory sa neda ist
+//7. prepocitat zemepisne suradnice na kartezke - zatial je tam len vzorec x = (lon2 - lon1) * 1000; lon1 je bod v 0
 
 class OsmPlanner{
 public:
@@ -83,10 +81,13 @@ private:
     ros::ServiceServer replanning_service;
 
     //todo prerobit na vlastny service (request NavSatFix targetu)
-    bool replanning(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
+    bool replanning(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
+        targetID = osm.getNearestPoint(req.target.latitude, req.target.longitude);
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID));
 
+        //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
+        res.success = true;
         return true;
     }
 
@@ -101,7 +102,7 @@ private:
 
     }
 
-    //todo prerobit na msg NavSatFix, zatial cita len node ID
+    //len pre test, bude sa pouzivat gpsCallback
     void changeSource(const std_msgs::Int32::ConstPtr& msg) {
 
         sourceID = msg->data;
@@ -120,7 +121,6 @@ private:
         double lon = msg->longitude;
 
         osm.publishPoint(lat, lon, colorTarget);
-        sleep(1);
         sourceID = osm.getNearestPoint(lat, lon);
 
         ROS_ERROR(" new source %d", sourceID);

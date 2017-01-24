@@ -57,7 +57,7 @@ find_package(TinyXML REQUIRED)
 ## Generate services in the 'srv' folder
 add_service_files(
    FILES
-        source_and_target.srv
+        newTarget.srv
     )
 
 ## Generate actions in the 'action' folder

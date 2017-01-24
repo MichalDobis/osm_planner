@@ -1,0 +1,3 @@
+sensor_msgs/NavSatFix target
+---
+bool success
