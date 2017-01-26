@@ -7,11 +7,14 @@
 
 OsmParser::OsmParser(std::string xml){
 
-        ros::NodeHandle n;
+    ros::NodeHandle n;
 
-        marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
-        path_pub = n.advertise<nav_msgs::Path>("path", 10);
-        shortest_path_pub = n.advertise<nav_msgs::Path>("shortest_path", 10);
+    position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
+    target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
+    obstacles_marker_pub = n.advertise<visualization_msgs::Marker>("obstacle_marker", 5);
+
+    path_pub = n.advertise<nav_msgs::Path>("path", 10);
+    shortest_path_pub = n.advertise<nav_msgs::Path>("shortest_path", 10);
 
 
         TiXmlDocument doc(xml);
@@ -46,46 +49,13 @@ OsmParser::OsmParser(std::string xml){
         createWays(&hRootWay);
         createNodes(&hRootNode);
         createNetwork();
+        createMarkers();
     }
 
 
         /**PUBLISHING FUNCTIONS**/
 
-void OsmParser::publishPoint(double latitude, double longitude, visualization_msgs::Marker::_color_type color){
-
-    visualization_msgs::Marker marker, line_strip, line_list;
-    marker.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = "/map";
-    marker.header.stamp = line_strip.header.stamp = line_list.header.stamp = ros::Time::now();
-    marker.ns = line_strip.ns = line_list.ns = "work_space";
-    marker.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;
-    marker.pose.orientation.w = line_strip.pose.orientation.w = line_list.pose.orientation.w = 1.0;
-
-    static long id  = 0;
-    marker.id = id++;
-
-    line_list.id = 2;
-
-    marker.type = visualization_msgs::Marker::POINTS;
-    line_list.type = visualization_msgs::Marker::ARROW;
-
-    line_list.scale.x = 0.05;
-    line_list.scale.y = 0.05;
-    line_list.scale.z = 0.05;
-
-    line_list.color.r = 1.0f;
-    line_list.color.g = 0.0f;
-    line_list.color.b = 0.0f;
-    line_list.color.a = 1.0;
-
-    line_list.lifetime = ros::Duration(10);
-
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
-    marker.scale.z = 0.1;
-
-
-    marker.color = color;
-    marker.lifetime = ros::Duration(100);
+void OsmParser::publishPoint(double latitude, double longitude, int marker_type){
 
     geometry_msgs::Point point;
     point.z = 0;
@@ -95,46 +65,27 @@ void OsmParser::publishPoint(double latitude, double longitude, visualization_ms
     point.x = (startPoint.longitude - longitude) * 1000;
     point.y = (startPoint.latitude - latitude) * 1000;
 
-    marker.points.push_back(point);
-    marker_pub.publish(marker);
+            switch (marker_type){
+                case CURRENT_POSITION_MARKER:
+                    position_marker.points.clear();
+                    position_marker.points.push_back(point);
+                    position_marker_pub.publish(position_marker);
+                    break;
+                case TARGET_POSITION_MARKER:
+                    target_marker.points.clear();
+                    target_marker.points.push_back(point);
+                    target_marker_pub.publish(target_marker);
+                    break;
+                case OBSTACLE_MARKER:
+                    obstacles_marker.points.push_back(point);
+                    obstacles_marker_pub.publish(obstacles_marker);
+                    break;
+            }
 }
 
 
 
-void OsmParser::publishPoint(int pointID, visualization_msgs::Marker::_color_type color) {
-
-    visualization_msgs::Marker marker, line_strip, line_list;
-    marker.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = "/map";
-    marker.header.stamp = line_strip.header.stamp = line_list.header.stamp = ros::Time::now();
-    marker.ns = line_strip.ns = line_list.ns = "work_space";
-    marker.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;
-    marker.pose.orientation.w = line_strip.pose.orientation.w = line_list.pose.orientation.w = 1.0;
-
-    static long id = 0;
-    marker.id = id;
-    line_list.id = 2;
-
-    marker.type = visualization_msgs::Marker::POINTS;
-    line_list.type = visualization_msgs::Marker::ARROW;
-
-    line_list.scale.x = 0.05;
-    line_list.scale.y = 0.05;
-    line_list.scale.z = 0.05;
-
-    line_list.color.r = 1.0f;
-    line_list.color.g = 0.0f;
-    line_list.color.b = 0.0f;
-    line_list.color.a = 1.0;
-
-    line_list.lifetime = ros::Duration(10);
-
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
-    marker.scale.z = 0.1;
-
-
-    marker.color = color;
-    marker.lifetime = ros::Duration(100);
+void OsmParser::publishPoint(int pointID, int marker_type) {
 
     geometry_msgs::Point point;
     point.z = 0;
@@ -144,8 +95,23 @@ void OsmParser::publishPoint(int pointID, visualization_msgs::Marker::_color_typ
     point.x = (startPoint.longitude - nodes[pointID].longitude) * 1000;
     point.y = (startPoint.latitude - nodes[pointID].latitude) * 1000;
 
-    marker.points.push_back(point);
-    marker_pub.publish(marker);
+    switch (marker_type){
+        case CURRENT_POSITION_MARKER:
+            position_marker.points.clear();
+            position_marker.points.push_back(point);
+            position_marker_pub.publish(position_marker);
+            break;
+        case TARGET_POSITION_MARKER:
+            target_marker.points.clear();
+            target_marker.points.push_back(point);
+            target_marker_pub.publish(target_marker);
+            break;
+        case OBSTACLE_MARKER:
+            obstacles_marker.points.push_back(point);
+            obstacles_marker_pub.publish(obstacles_marker);
+            break;
+    }
+
 }
 
 
@@ -294,6 +260,56 @@ double OsmParser::getBearing(OSM_NODE node1, OSM_NODE node2){
 }
 
 //private functions
+
+void OsmParser::createMarkers(){
+
+    visualization_msgs::Marker line_strip, line_list;
+
+    position_marker.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = "/map";
+    position_marker.header.stamp = line_strip.header.stamp = line_list.header.stamp = ros::Time::now();
+    position_marker.ns = line_strip.ns = line_list.ns = "work_space";
+    position_marker.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;
+    position_marker.pose.orientation.w = line_strip.pose.orientation.w = line_list.pose.orientation.w = 1.0;
+
+    position_marker.id = 0;
+    line_list.id = 2;
+
+    position_marker.type = visualization_msgs::Marker::POINTS;
+    line_list.type = visualization_msgs::Marker::ARROW;
+
+    line_list.scale.x = 0.05;
+    line_list.scale.y = 0.05;
+    line_list.scale.z = 0.05;
+
+    line_list.color.r = 1.0f;
+    line_list.color.g = 0.0f;
+    line_list.color.b = 0.0f;
+    line_list.color.a = 1.0;
+
+    line_list.lifetime = ros::Duration(100);
+
+    position_marker.scale.x = 0.05;
+    position_marker.scale.y = 0.05;
+    position_marker.scale.z = 0.05;
+
+    position_marker.lifetime = ros::Duration(100);
+
+    //yellow marker
+    position_marker.color.r = 1.0f;
+    position_marker.color.g = 1.0f;
+    position_marker.color.b = 0.0f;
+    position_marker.color.a = 1.0;
+
+    target_marker = position_marker;
+    //red marker
+    target_marker.color.g = 0.0f;
+
+    obstacles_marker = position_marker;
+    //blue marker
+    obstacles_marker.color.r = 0.0f;
+    obstacles_marker.color.g = 0.0f;
+    obstacles_marker.color.b = 1.0f;
+}
 
 //parse all footways in osm maps
 //todo parametrizovat funkciu na vyber roznych ciest napr. footway

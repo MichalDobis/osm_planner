@@ -30,11 +30,15 @@ public:
         int newID;
     } TRANSLATE_TABLE;
 
+    const static int CURRENT_POSITION_MARKER = 0;
+    const static int TARGET_POSITION_MARKER = 1;
+    const static int OBSTACLE_MARKER = 2;
+
     OsmParser(std::string xml);
 
     //publishing functions
-    void publishPoint(int pointID, visualization_msgs::Marker::_color_type color);
-    void publishPoint(double latitude, double longitude, visualization_msgs::Marker::_color_type color);
+    void publishPoint(int pointID, int marker_type);
+    void publishPoint(double latitude, double longitude, int marker_type);
     void publishPath();
     void publishPath(std::vector<int> nodesInPath);
     void publishPath(std::vector<int> nodesInPath, double target_lat, double target_lon);
@@ -57,10 +61,14 @@ protected:
 private:
 
     //publishers
-    ros::Publisher marker_pub;
+    ros::Publisher position_marker_pub;
+    ros::Publisher target_marker_pub;
+    ros::Publisher obstacles_marker_pub;
+
     ros::Publisher path_pub;
     ros::Publisher shortest_path_pub;
 
+    visualization_msgs::Marker position_marker, target_marker, obstacles_marker;
     //msgs for shortest path
     nav_msgs::Path sh_path;
 
@@ -72,6 +80,8 @@ private:
 
     //start point - must be set and than you can publishing paths
     OSM_NODE startPoint;
+
+    void createMarkers();
 
     void createWays(TiXmlHandle* hRootWay);
     void createNodes(TiXmlHandle *hRootNode);

@@ -36,18 +36,6 @@ public:
         replanning_service = n.advertiseService("replanning", &OsmPlanner::replanning, this);
         cancel_point_service = n.advertiseService("cancel_point", &OsmPlanner::cancelPoint, this);
 
-        //color of points
-        colorPosition.r = 1.0f;
-        colorPosition.g = 1.0f;
-        colorPosition.b = 0.0f;
-        colorPosition.a = 1.0;
-
-        colorTarget.r = 1.0f;
-        colorTarget.g = 0.0f;
-        colorTarget.b = 0.0f;
-        colorTarget.a = 1.0;
-
-
         //****************TEST PLANNING PATH FROM PARAM**********************//
         //-------------------------------------------------------------------//
 
@@ -61,7 +49,7 @@ public:
         sourceID = osm.getNearestPoint(source_lat, source_lon);
         ROS_INFO("source ID %d", sourceID);
         osm.setStartPoint(source_lat, source_lon);
-        osm.publishPoint(sourceID, colorPosition);
+        osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
         sleep(1);
 
         //draw paths network
@@ -70,9 +58,9 @@ public:
 
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
         ROS_INFO("target ID %d", targetID);
-        osm.publishPoint(targetID, colorTarget);
+        osm.publishPoint(targetID, OsmParser::TARGET_POSITION_MARKER);
         sleep(1);
-        osm.publishPoint(target_latitude, target_longitude, colorTarget);
+        osm.publishPoint(target_latitude, target_longitude, OsmParser::TARGET_POSITION_MARKER);
 
 
         //planning and publish final path
@@ -93,9 +81,6 @@ private:
 
     double target_longitude;
     double target_latitude;
-
-    visualization_msgs::Marker::_color_type colorPosition;
-    visualization_msgs::Marker::_color_type colorTarget;
 
     /* Subscribers */
     ros::Subscriber replanning_sub;
@@ -135,7 +120,7 @@ private:
 
         //delete edge between two osm nodes
         osm.deleteEdgeOnGraph(path[req.pointID], path[req.pointID + 1]);
-        osm.publishPoint(path[req.pointID], colorPosition);
+        osm.publishPoint(path[req.pointID], OsmParser::OBSTACLE_MARKER);
         //replanning shorest path
         dijkstra.setGraph(osm.getGraphOfVertex());
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
@@ -151,7 +136,7 @@ private:
         ROS_ERROR("change target %d", targetID);
 
         osm.publishPath(dijkstra.getSolution(targetID));
-        osm.publishPoint(targetID, colorTarget);
+        osm.publishPoint(targetID, OsmParser::TARGET_POSITION_MARKER);
 
     }
 
@@ -161,7 +146,7 @@ private:
         sourceID = msg->data;
 
         ROS_ERROR("change source %d", sourceID);
-        osm.publishPoint(sourceID, colorPosition);
+        osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
         sleep(1);
         //todo tato funkcia sa bude vykonvat len docasne, potom sa bude vykonavat v service replanning
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID));
@@ -176,19 +161,19 @@ private:
 
         if (!initialized) init(lat, lon);
 
-        osm.publishPoint(lat, lon, colorTarget);
+        osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
         sourceID = osm.getNearestPoint(lat, lon);
 
         ROS_ERROR(" new source %d", sourceID);
 
-        osm.publishPoint(sourceID, colorPosition);
+       // osm.publishPoint(sourceID, colorPosition);
     }
 
     void init(double lat, double lon){
 
         ROS_INFO("source ID %d", sourceID);
         osm.setStartPoint(lat, lon);
-        osm.publishPoint(lat, lon, colorPosition);
+        osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
 
         //draw paths network
         osm.publishPath();
