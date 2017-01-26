@@ -1,4 +1,4 @@
-# osm_planner
+# OpenStreetMap planner
 Experimental ROS package for finding path on OpenStreetMap using dijkstra algorithm
 
 ##Subscribed Topic
@@ -10,4 +10,5 @@ Experimental ROS package for finding path on OpenStreetMap using dijkstra algori
 */shortest_path ([nav_msgs/Path](http://docs.ros.org/api/nav_msgs/html/msg/Path.html))* - publishing found shortest path<br>
 
 ##Services
-*/replanning ([osm_planner/newTarget](https://github.com/MichalDobis/osm_planner/blob/master/srv/newTarget.srv))* - execute to find shortest path from current position to selected target
+*/replanning ([osm_planner/newTarget](https://github.com/MichalDobis/osm_planner/blob/master/srv/newTarget.srv))* - execute to find shortest path from current position to selected target<br>
+*/cancel_point ([osm_planner/cancelledPoint](https://github.com/MichalDobis/osm_planner/blob/master/srv/cancelledPoint.srv))* - delete edge of graph, where is any obstacle and trajectory must be replane. The cancelled point is index of array (published shortest path). This index is first osm node id and index + 1 is second osm node id. Deleted edge will lie between these osm nodes.<br>
