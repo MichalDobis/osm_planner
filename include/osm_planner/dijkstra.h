@@ -26,6 +26,7 @@ public:
     Dijkstra(std::vector <std::vector<double> > graph);
     std::vector<int> findShortestPath(int src, int target);
     std::vector<int> getSolution(int target);
+    void setGraph(std::vector< std::vector<double> > graph);
 
 private:
 

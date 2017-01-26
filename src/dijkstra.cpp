@@ -15,9 +15,18 @@ Dijkstra::Dijkstra(std::vector <std::vector<double> > graph):
 {
 
     this->graph = graph;
+
+}
+
+void Dijkstra::setGraph(std::vector< std::vector<double> > graph){
+
+    this->graph = graph;
 }
 
 std::vector<int> Dijkstra::findShortestPath(int src, int target){
+
+    parent.resize(graph.size());
+    dist.resize(graph.size());
 
     this->source = src;
     // sptSet[i] will true if vertex i is included / in shortest
@@ -64,7 +73,7 @@ std::vector<int> Dijkstra::findShortestPath(int src, int target){
     }
 
     // print the constructed distance array
-    printf("\ngetting solution\n");
+    //printf("\ngetting solution\n");
     return getSolution(target);
     //printSolution(dist, parent);
 }
@@ -90,7 +99,7 @@ void Dijkstra::printPath(std::vector<int> parent, int j)
     if (parent[j]==-1)
         return;
 
-    printf("\nprintf path %d\n", j);
+//    printf("\nprintf path %d\n", j);
 
     //todo zistit ako to tu funguje pada to tu
     printPath(parent, parent[j]);

@@ -39,6 +39,9 @@ public:
     void publishPath(std::vector<int> nodesInPath);
     void publishPath(std::vector<int> nodesInPath, double target_lat, double target_lon);
 
+    //deleting edge on the graph
+    void deleteEdgeOnGraph(int nodeID_1, int nodeID_2);
+
     //GETTERS
     std::vector< std::vector<double> > getGraphOfVertex(); //for dijkstra algorithm
     int getNearestPoint(double lat, double lon); //return OSM node ID

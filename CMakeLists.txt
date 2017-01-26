@@ -58,6 +58,7 @@ find_package(TinyXML REQUIRED)
 add_service_files(
    FILES
         newTarget.srv
+        cancelledPoint.srv
     )
 
 ## Generate actions in the 'action' folder

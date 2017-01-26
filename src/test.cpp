@@ -9,14 +9,13 @@
 #include <osm_planner/dijkstra.h>
 #include <osm_planner/osm_parser.h>
 #include <osm_planner/newTarget.h>
+#include <osm_planner/cancelledPoint.h>
 #include <std_msgs/Int32.h>
 #include <std_srvs/Empty.h>
 
 //todo
 //1. zistit preco pada pri hladany cesty v nejakom pripade  (sad_janka_krala.osm)
-//2. zvazit, ci nebude treba pouzivat action server
-//3. preplanovanie trajektorie a odstranenie uzlu cez, ktory sa neda ist
-//4. prepocitat zemepisne suradnice na kartezke - zatial je tam len vzorec x = (lon2 - lon1) * 1000; lon1 je bod v 0
+//2. prepocitat zemepisne suradnice na kartezke - zatial je tam len vzorec x = (lon2 - lon1) * 1000; lon1 je bod v 0
 
 class OsmPlanner{
 public:
@@ -35,6 +34,7 @@ public:
 
         //services
         replanning_service = n.advertiseService("replanning", &OsmPlanner::replanning, this);
+        cancel_point_service = n.advertiseService("cancel_point", &OsmPlanner::cancelPoint, this);
 
         //color of points
         colorPosition.r = 1.0f;
@@ -104,8 +104,8 @@ private:
 
     /* Services */
     ros::ServiceServer replanning_service;
+    ros::ServiceServer cancel_point_service;
 
-    //todo prerobit na vlastny service (request NavSatFix targetu)
     bool replanning(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
        target_latitude = req.target.latitude;
@@ -114,6 +114,31 @@ private:
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
 
+        //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
+        res.success = true;
+        return true;
+    }
+
+    bool cancelPoint(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res){
+
+        //get current shortest path - vector of osm nodes IDs
+       std::vector <int> path = dijkstra.getSolution(targetID);
+
+        for (int i = 0; i < path.size();i++) {
+            ROS_WARN("node id %d", path[i]);
+        }
+        //when index is greather than array size
+        if (req.pointID >= path.size()){
+            res.success = false;
+            return true;
+        }
+
+        //delete edge between two osm nodes
+        osm.deleteEdgeOnGraph(path[req.pointID], path[req.pointID + 1]);
+        osm.publishPoint(path[req.pointID], colorPosition);
+        //replanning shorest path
+        dijkstra.setGraph(osm.getGraphOfVertex());
+        osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
         res.success = true;
         return true;
@@ -136,9 +161,10 @@ private:
         sourceID = msg->data;
 
         ROS_ERROR("change source %d", sourceID);
+        osm.publishPoint(sourceID, colorPosition);
+        sleep(1);
         //todo tato funkcia sa bude vykonvat len docasne, potom sa bude vykonavat v service replanning
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID));
-        osm.publishPoint(sourceID, colorPosition);
 
     }
 

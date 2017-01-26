@@ -110,7 +110,8 @@ void OsmParser::publishPoint(int pointID, visualization_msgs::Marker::_color_typ
     marker.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;
     marker.pose.orientation.w = line_strip.pose.orientation.w = line_list.pose.orientation.w = 1.0;
 
-    marker.id = 0;
+    static long id = 0;
+    marker.id = id;
     line_list.id = 2;
 
     marker.type = visualization_msgs::Marker::POINTS;
@@ -190,6 +191,8 @@ void OsmParser::publishPath(std::vector<int> nodesInPath) {
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
+        ROS_WARN("node id %d", nodesInPath[i]);
+
         pose.pose.position.x = (startPoint.longitude - nodes[nodesInPath[i]].longitude) * 1000;
         pose.pose.position.y = (startPoint.latitude - nodes[nodesInPath[i]].latitude) * 1000;
         sh_path.poses.push_back(pose);
@@ -212,6 +215,8 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
+        ROS_ERROR("node id %d", nodesInPath[i]);
+
         pose.pose.position.x = (startPoint.longitude - nodes[nodesInPath[i]].longitude) * 1000;
         pose.pose.position.y = (startPoint.latitude - nodes[nodesInPath[i]].latitude) * 1000;
         sh_path.poses.push_back(pose);
@@ -226,8 +231,17 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
 
 }
 
+//todo spravit aj obnovu bodov
+void OsmParser::deleteEdgeOnGraph(int nodeID_1, int nodeID_2){
+
+    networkArray[nodeID_1][nodeID_2] = 0;
+    networkArray[nodeID_2][nodeID_1] = 0;
+
+}
+
         /* GETTERS */
 
+//todo - mozno by bolo lepsie, aby tato funkcia robila funkciu createNerwork() a pole by bolo globalne len v classe Dijkstra
 //getter for dijkstra algorithm
 std::vector< std::vector<double> > OsmParser::getGraphOfVertex(){
     return networkArray;
