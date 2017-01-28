@@ -28,9 +28,7 @@ public:
         ros::NodeHandle n;
 
         //subscribers
-        replanning_sub = n.subscribe("replanning", 1, &OsmPlanner::changeTarget, this);
         gps_position_sub = n.subscribe("fix", 1, &OsmPlanner::gpsCallback, this);
-        change_source_sub = n.subscribe("change_source", 1, &OsmPlanner::changeSource, this);
 
         //services
         replanning_service = n.advertiseService("replanning", &OsmPlanner::replanning, this);
@@ -39,34 +37,44 @@ public:
         //****************TEST PLANNING PATH FROM PARAM**********************//
         //-------------------------------------------------------------------//
 
-        //finding nereast OSM node
-        double source_lat, source_lon;
-        n.param<double>("target_lon", target_longitude, 1);
-        n.param<double>("target_lat", target_latitude, 1);
-        n.param<double>("source_lon", source_lon, 1);
-        n.param<double>("source_lat", source_lat, 1);
 
-        sourceID = osm.getNearestPoint(source_lat, source_lon);
-        ROS_INFO("source ID %d", sourceID);
-        osm.setStartPoint(source_lat, source_lon);
-        sleep(1);
-        osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
-        //osm.publishPoint(source_lat, source_lon, OsmParser::CURRENT_POSITION_MARKER);
+        bool test;
+        n.param<bool>("test", test, false);
+        if (test) {
 
-        //draw route network
-        osm.publishRouteNetwork();
-        sleep(1);
+            //subscribers for test
+            replanning_sub = n.subscribe("replanning", 1, &OsmPlanner::changeTarget, this);
+            change_source_sub = n.subscribe("change_source", 1, &OsmPlanner::changeSource, this);
 
-        targetID = osm.getNearestPoint(target_latitude, target_longitude);
-        ROS_INFO("target ID %d", targetID);
-        //osm.publishPoint(targetID, OsmParser::TARGET_POSITION_MARKER);
-        //sleep(1);
-        osm.publishPoint(target_latitude, target_longitude, OsmParser::TARGET_POSITION_MARKER);
+            //finding nereast OSM node
+            double source_lat, source_lon;
+            n.param<double>("target_lon", target_longitude, 1);
+            n.param<double>("target_lat", target_latitude, 1);
+            n.param<double>("source_lon", source_lon, 1);
+            n.param<double>("source_lat", source_lat, 1);
 
-        //planning and publish final path
-        osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
+            sourceID = osm.getNearestPoint(source_lat, source_lon);
+            ROS_INFO("source ID %d", sourceID);
+            osm.setStartPoint(source_lat, source_lon);
+            sleep(1);
+            osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
+            //osm.publishPoint(source_lat, source_lon, OsmParser::CURRENT_POSITION_MARKER);
 
-        initialized = true;
+            //draw route network
+            osm.publishRouteNetwork();
+            sleep(1);
+
+            targetID = osm.getNearestPoint(target_latitude, target_longitude);
+            ROS_INFO("target ID %d", targetID);
+            //osm.publishPoint(targetID, OsmParser::TARGET_POSITION_MARKER);
+            //sleep(1);
+            osm.publishPoint(target_latitude, target_longitude, OsmParser::TARGET_POSITION_MARKER);
+
+            //planning and publish final path
+            osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
+
+            initialized = true;
+        } else {ROS_INFO("test false");}
         //-------------------------------------------------------------------//
     }
 private:
@@ -137,7 +145,8 @@ private:
         return true;
     }
 
-    //len pre test, bude sa pouzivat service replanning
+    //*******************************TEST********************************//
+    //-------------------------------------------------------------------//
     void changeTarget(const std_msgs::Int32::ConstPtr& msg) {
 
         targetID = msg->data;
@@ -156,10 +165,11 @@ private:
         ROS_WARN("change source %d", sourceID);
         osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
         sleep(1);
-        //todo tato funkcia sa bude vykonvat len docasne, potom sa bude vykonavat v service replanning
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), osm.getNodeByID(sourceID).latitude, osm.getNodeByID(sourceID).longitude);
 
     }
+    //-------------------------------------------------------------------//
+
 
     void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
 
@@ -171,10 +181,6 @@ private:
 
         osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
         sourceID = osm.getNearestPoint(lat, lon);
-
-        ROS_WARN(" new source %d", sourceID);
-
-       // osm.publishPoint(sourceID, colorPosition);
     }
 
     void init(double lat, double lon){

@@ -134,9 +134,9 @@ target_link_libraries(parser
         ${catkin_LIBRARIES}
         )
 
-add_executable(osm_planner_node src/osm_planner_node.cpp)
-target_link_libraries(osm_planner_node dijkstra parser ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
-add_dependencies(osm_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_executable(test_osm src/test.cpp)
+target_link_libraries(test_osm dijkstra parser ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
+add_dependencies(test_osm ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 #############
@@ -158,7 +158,7 @@ install(
         TARGETS
         dijkstra
         parser
-        osm_planner_node
+        test_osm
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})

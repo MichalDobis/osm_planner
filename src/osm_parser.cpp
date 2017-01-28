@@ -170,7 +170,7 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
-        ROS_ERROR("node id %d", nodesInPath[i]);
+        ROS_DEBUG("node id %d", nodesInPath[i]);
 
         pose.pose.position.x = (startPoint.longitude - nodes[nodesInPath[i]].longitude) * 1000;
         pose.pose.position.y = (startPoint.latitude - nodes[nodesInPath[i]].latitude) * 1000;

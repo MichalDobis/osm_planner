@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<launch>
+  <!--Map source-->
+  <param name="filepath" value="$(find osm_planner)/osm_example/botanicka.osm"/>
+  
+  <!--for TEST-->
+  <arg name="test" default="false" />
+  <param name="test" value="true" if="$(arg test)"/>
+  <rosparam file="$(find osm_planner)/test/test_botanicka.yaml" command="load" if="$(arg test)"/>
+
+  <!--OSM planner-->
+  <node pkg="osm_planner" name="osm_planner" type="osm_planner_node" output="screen"/>
+  <!--RVIZ for drawing routes-->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find osm_planner)/rviz/routes.rviz" required="true"/>
+
+
+</launch>
