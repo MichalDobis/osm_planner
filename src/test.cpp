@@ -50,8 +50,8 @@ public:
         ROS_INFO("source ID %d", sourceID);
         osm.setStartPoint(source_lat, source_lon);
         sleep(1);
-        osm.publishPoint(source_lat, source_lon, OsmParser::CURRENT_POSITION_MARKER);
-        sleep(1);
+        osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
+        //osm.publishPoint(source_lat, source_lon, OsmParser::CURRENT_POSITION_MARKER);
 
         //draw route network
         osm.publishRouteNetwork();
@@ -129,7 +129,7 @@ private:
         osm.deleteEdgeOnGraph(node1.id, node2.id);
 
         //replanning shorest path
-        //sourceID = path[req.pointID];   //return back to last position
+        sourceID = path[req.pointID];   //return back to last position
         dijkstra.setGraph(osm.getGraphOfVertex());
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false

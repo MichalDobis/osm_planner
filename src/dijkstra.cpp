@@ -36,7 +36,8 @@ std::vector<int> Dijkstra::findShortestPath(int src, int target){
     // Initialize all distances as INFINITE and stpSet[] as false
     for (int i = 0; i < graph.size(); i++)
     {
-        parent[0] = -1;
+       //parent[0] = -1;
+        parent[i] = -1;
         dist[i] = 1000.0; //INT_MAX
         sptSet[i] = false;
     }
@@ -99,7 +100,7 @@ void Dijkstra::printPath(std::vector<int> parent, int j)
     if (parent[j]==-1)
         return;
 
-//    printf("\nprintf path %d\n", j);
+   //printf("\nprintf path %d\n", j);
 
     //todo zistit ako to tu funguje pada to tu
     printPath(parent, parent[j]);
@@ -114,17 +115,19 @@ std::vector<int> Dijkstra::getSolution(int target) {
 
     path.clear();
 
-    for (int i = 1; i < dist.size(); i++) {
 
-        if (i == target) {
-            if (dist[i] == 1000.0) {
-                return path;
-            }
-            path.push_back(source);
-
-            printPath(parent, i);
-        }
+    if (dist[target] >= 1000.0) {
+        return path;
     }
+   path.push_back(source);
+
+    for (int i = 0; i < parent.size(); i++)
+        printf("parent %d: %f\n\n", i, parent[i]);
+
+    // for (int i = target; parent[i] != -1; i = parent[i]){
+  //  }
+
+    printPath(parent, target);
 
     return path;
 }
