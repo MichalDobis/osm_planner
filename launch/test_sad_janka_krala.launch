@@ -9,7 +9,7 @@
   <rosparam command="load" file="$(find osm_planner)/config/ros_param.yaml" />
   
   <!--for TEST-->
-  <arg name="test" default="false" />
+  <arg name="test" default="true" />
   <param name="test" value="true" if="$(arg test)"/>
   <rosparam file="$(find osm_planner)/test/test_sad_janka_krala.yaml" command="load" if="$(arg test)"/>
 

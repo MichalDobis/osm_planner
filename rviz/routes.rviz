@@ -94,7 +94,7 @@ Visualization Manager:
       Radius: 0.03
       Shaft Diameter: 0.1
       Shaft Length: 0.1
-      Topic: /shortest_path
+      Topic: shortest_path
       Unreliable: false
       Value: true
     - Class: rviz/Marker
@@ -192,5 +192,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1375
-  X: 501
+  X: 490
   Y: 16

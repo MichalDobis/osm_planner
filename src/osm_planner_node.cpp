@@ -40,7 +40,7 @@ public:
 
 
         bool test;
-        n.param<bool>("test", test, false);
+        n.param<bool>("/test", test, false);
         if (test) {
 
             //subscribers for test
