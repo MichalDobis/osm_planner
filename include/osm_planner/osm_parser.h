@@ -70,7 +70,9 @@ private:
     //msgs for shortest path
     nav_msgs::Path sh_path;
 
-    std::string map_frame;
+    std::string map_frame; //name of frame for msgs
+
+    bool visualization; //enable or disable publishing markers and paths for rviz visualization
 
     //vector arrays of OSM nodes and ways
     std::vector <OSM_WAY> ways;

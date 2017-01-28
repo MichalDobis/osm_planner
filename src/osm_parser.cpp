@@ -10,16 +10,23 @@ OsmParser::OsmParser(std::string xml){
         ros::NodeHandle n;
 
         std::string topic_name;
+
+        //get the parameters
         n.param<std::string>("map_frame", map_frame, "/map");
         n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path" );
-        position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
-        target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
+        n.param<bool>("visualization", visualization, false);
 
-        path_pub = n.advertise<nav_msgs::Path>("route_network", 10);
-        refused_path_pub = n.advertise<nav_msgs::Path>("refused_path", 10);
+        //publishers
         shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
 
+        if (visualization) {
+            //Publishers for visualization
+            position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
+            target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
 
+            path_pub = n.advertise<nav_msgs::Path>("route_network", 10);
+            refused_path_pub = n.advertise<nav_msgs::Path>("refused_path", 10);
+        }
         TiXmlDocument doc(xml);
         TiXmlNode* osm;
         TiXmlNode* node;
@@ -60,6 +67,9 @@ OsmParser::OsmParser(std::string xml){
 
 void OsmParser::publishPoint(double latitude, double longitude, int marker_type){
 
+    if (!visualization)
+        return;
+
     geometry_msgs::Point point;
     point.z = 0;
     point.x = 0;
@@ -86,6 +96,9 @@ void OsmParser::publishPoint(double latitude, double longitude, int marker_type)
 
 void OsmParser::publishPoint(int pointID, int marker_type) {
 
+    if (!visualization)
+        return;
+
     geometry_msgs::Point point;
     point.z = 0;
     point.x = 0;
@@ -111,6 +124,9 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
 
 //publishing all paths
     void OsmParser::publishRouteNetwork(){
+
+    if (!visualization)
+        return;
 
         OSM_NODE testNode;
         nav_msgs::Path path;
@@ -140,6 +156,9 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
 
 //publishing defined path
 void OsmParser::publishRefusedPath(std::vector<int> nodesInPath) {
+
+    if (!visualization)
+        return;
 
     nav_msgs::Path refused_path;
     refused_path.poses.clear();
@@ -259,6 +278,9 @@ void OsmParser::setStartPoint(double latitude, double longitude){
 //private functions
 
 void OsmParser::createMarkers(){
+
+    if (!visualization)
+        return;
 
     visualization_msgs::Marker line_strip, line_list;
 

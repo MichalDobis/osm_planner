@@ -75,7 +75,7 @@ public:
             osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
 
             initialized = true;
-        } else {ROS_INFO("test false");}
+        }
         //-------------------------------------------------------------------//
     }
 private:

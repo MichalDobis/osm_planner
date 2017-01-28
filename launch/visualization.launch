@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<launch>
+
+  <include file="$(find osm_planner)/launch/planner.launch">
+    <!--Defining this arg is necessary to change file path -->
+    <arg name="filepath" default="$(find osm_planner)/osm_example/sad_janka_krala.osm"/>
+    <param name="filepath" value="$(find osm_planner)/osm_example/sad_janka_krala.osm"/>
+  </include>
+
+  <!--RVIZ for drawing routes-->
+  <param name="visualization" value="true"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find osm_planner)/rviz/routes.rviz" required="true"/>
+
+</launch>
