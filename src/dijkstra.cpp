@@ -121,9 +121,6 @@ std::vector<int> Dijkstra::getSolution(int target) {
     }
    path.push_back(source);
 
-    for (int i = 0; i < parent.size(); i++)
-        printf("parent %d: %f\n\n", i, parent[i]);
-
     // for (int i = target; parent[i] != -1; i = parent[i]){
   //  }
 

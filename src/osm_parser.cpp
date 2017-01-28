@@ -7,14 +7,17 @@
 
 OsmParser::OsmParser(std::string xml){
 
-    ros::NodeHandle n;
+        ros::NodeHandle n;
 
-    position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
-    target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
+        std::string topic_name;
+        n.param<std::string>("map_frame", map_frame, "/map");
+        n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path" );
+        position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
+        target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
 
-    path_pub = n.advertise<nav_msgs::Path>("route_network", 10);
-    refused_path_pub = n.advertise<nav_msgs::Path>("refused_path", 10);
-    shortest_path_pub = n.advertise<nav_msgs::Path>("shortest_path", 10);
+        path_pub = n.advertise<nav_msgs::Path>("route_network", 10);
+        refused_path_pub = n.advertise<nav_msgs::Path>("refused_path", 10);
+        shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
 
 
         TiXmlDocument doc(xml);
@@ -111,7 +114,7 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
 
         OSM_NODE testNode;
         nav_msgs::Path path;
-        path.header.frame_id = "/map";
+        path.header.frame_id = map_frame;
 
         geometry_msgs::PoseStamped pose;
         pose.pose.position.x = 0;
@@ -130,6 +133,7 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
             }
             usleep(100000);
 
+            path.header.stamp = ros::Time::now();
             path_pub.publish(path);
         }
     }
@@ -139,7 +143,7 @@ void OsmParser::publishRefusedPath(std::vector<int> nodesInPath) {
 
     nav_msgs::Path refused_path;
     refused_path.poses.clear();
-    refused_path.header.frame_id = "/map";
+    refused_path.header.frame_id = map_frame;
 
     geometry_msgs::PoseStamped pose;
     pose.pose.position.x = 0;
@@ -153,6 +157,7 @@ void OsmParser::publishRefusedPath(std::vector<int> nodesInPath) {
         refused_path.poses.push_back(pose);
     }
 
+    refused_path.header.stamp = ros::Time::now();
     refused_path_pub.publish(refused_path);
 }
 
@@ -160,7 +165,7 @@ void OsmParser::publishRefusedPath(std::vector<int> nodesInPath) {
 void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, double target_lon) {
 
     sh_path.poses.clear();
-    sh_path.header.frame_id = "/map";
+    sh_path.header.frame_id = map_frame;
 
     geometry_msgs::PoseStamped pose;
 
@@ -181,7 +186,7 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
     pose.pose.position.y = (startPoint.latitude - target_lat) * 1000;
 
     sh_path.poses.push_back(pose);
-
+    sh_path.header.stamp = ros::Time::now();
     shortest_path_pub.publish(sh_path);
 
 }
@@ -256,7 +261,7 @@ void OsmParser::createMarkers(){
 
     visualization_msgs::Marker line_strip, line_list;
 
-    position_marker.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = "/map";
+    position_marker.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = map_frame;
     position_marker.header.stamp = line_strip.header.stamp = line_list.header.stamp = ros::Time::now();
     position_marker.ns = line_strip.ns = line_list.ns = "work_space";
     position_marker.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;

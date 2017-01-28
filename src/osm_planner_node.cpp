@@ -27,8 +27,10 @@ public:
         //init ros topics and services
         ros::NodeHandle n;
 
+        std::string topic_name;
+        n.param<std::string>("topic_gps_position", topic_name, "/fix");
         //subscribers
-        gps_position_sub = n.subscribe("fix", 1, &OsmPlanner::gpsCallback, this);
+        gps_position_sub = n.subscribe(topic_name, 1, &OsmPlanner::gpsCallback, this);
 
         //services
         replanning_service = n.advertiseService("replanning", &OsmPlanner::replanning, this);

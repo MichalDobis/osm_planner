@@ -64,9 +64,13 @@ private:
     ros::Publisher refused_path_pub;
     ros::Publisher shortest_path_pub;
 
+    //visualization msgs
     visualization_msgs::Marker position_marker, target_marker;
+
     //msgs for shortest path
     nav_msgs::Path sh_path;
+
+    std::string map_frame;
 
     //vector arrays of OSM nodes and ways
     std::vector <OSM_WAY> ways;
