@@ -56,18 +56,18 @@ public:
 
             sourceID = osm.getNearestPoint(source_lat, source_lon);
             ROS_INFO("source ID %d", sourceID);
-            osm.setStartPoint(source_lat, source_lon);
+           osm.setStartPoint(source_lat, source_lon);
             sleep(1);
-            osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
-            //osm.publishPoint(source_lat, source_lon, OsmParser::CURRENT_POSITION_MARKER);
+            //osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
+            osm.publishPoint(source_lat, source_lon, OsmParser::CURRENT_POSITION_MARKER);
 
             //draw route network
-            osm.publishRouteNetwork();
+           osm.publishRouteNetwork();
             sleep(1);
 
             targetID = osm.getNearestPoint(target_latitude, target_longitude);
+
             ROS_INFO("target ID %d", targetID);
-            //osm.publishPoint(targetID, OsmParser::TARGET_POSITION_MARKER);
             //sleep(1);
             osm.publishPoint(target_latitude, target_longitude, OsmParser::TARGET_POSITION_MARKER);
 
@@ -205,6 +205,14 @@ int main(int argc, char **argv) {
 
 	std::string file = "skuska.osm";
 	n.getParam("filepath", file);
+    OsmParser::OSM_NODE node1;
+    OsmParser::OSM_NODE node2;
+
+    node1.latitude = 48.1457728;
+    node1.longitude = 17.0729109;
+    node2.latitude = 48.1462083;
+    node2.longitude = 17.0731963;
+    OsmParser::getDistance(node1, node2);
     OsmPlanner osm_planner(file);
 
     ros::spin();

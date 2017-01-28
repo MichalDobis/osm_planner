@@ -49,8 +49,11 @@ public:
     std::vector< std::vector<double> > getGraphOfVertex(); //for dijkstra algorithm
     int getNearestPoint(double lat, double lon); //return OSM node ID
     OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
-    double getDistance(OSM_NODE node1, OSM_NODE node2);
-    double getBearing(OSM_NODE node1, OSM_NODE node2);
+    static double getDistance(OSM_NODE node1, OSM_NODE node2);
+    double getCoordinateX(double lon1, double lon2, double lat1, double lat2);
+    double getCoordinateY(double lat1, double lat2);
+
+    static double getBearing(OSM_NODE node1, OSM_NODE node2);
 
     //SETTERS
     void setStartPoint(double latitude, double longitude); //set the zero point in cartezian coordinates
