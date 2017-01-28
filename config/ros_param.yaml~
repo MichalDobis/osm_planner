@@ -1,4 +1,0 @@
-map_frame: "/map"
-topic_shortest_path: "/shortest_path2"
-topic_gps_position: "/fix2"
-

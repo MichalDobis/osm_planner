@@ -175,16 +175,17 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
-        ROS_DEBUG("node id %d", nodesInPath[i]);
+        ROS_WARN("shortest path: node id %d", nodesInPath[i]);
 
         pose.pose.position.x = (startPoint.longitude - nodes[nodesInPath[i]].longitude) * 1000;
         pose.pose.position.y = (startPoint.latitude - nodes[nodesInPath[i]].latitude) * 1000;
+        pose.header.seq = i;
         sh_path.poses.push_back(pose);
     }
 
     pose.pose.position.x = (startPoint.longitude - target_lon) * 1000;
     pose.pose.position.y = (startPoint.latitude - target_lat) * 1000;
-
+    pose.header.seq = pose.header.seq + 1;
     sh_path.poses.push_back(pose);
     sh_path.header.stamp = ros::Time::now();
     shortest_path_pub.publish(sh_path);

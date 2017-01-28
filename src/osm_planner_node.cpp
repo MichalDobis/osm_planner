@@ -14,8 +14,7 @@
 #include <std_srvs/Empty.h>
 
 //todo
-//1. zistit preco pada pri hladany cesty v nejakom pripade  (sad_janka_krala.osm)
-//2. prepocitat zemepisne suradnice na kartezke - zatial je tam len vzorec x = (lon2 - lon1) * 1000; lon1 je bod v 0
+//1. prepocitat zemepisne suradnice na kartezke - zatial je tam len vzorec x = (lon2 - lon1) * 1000; lon1 je bod v 0
 
 class OsmPlanner{
 public:
