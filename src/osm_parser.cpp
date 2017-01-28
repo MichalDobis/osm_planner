@@ -11,9 +11,9 @@ OsmParser::OsmParser(std::string xml){
 
     position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
     target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
-    obstacles_marker_pub = n.advertise<visualization_msgs::Marker>("obstacle_marker", 5);
 
-    path_pub = n.advertise<nav_msgs::Path>("path", 10);
+    path_pub = n.advertise<nav_msgs::Path>("route_network", 10);
+    refused_path_pub = n.advertise<nav_msgs::Path>("refused_path", 10);
     shortest_path_pub = n.advertise<nav_msgs::Path>("shortest_path", 10);
 
 
@@ -76,10 +76,6 @@ void OsmParser::publishPoint(double latitude, double longitude, int marker_type)
                     target_marker.points.push_back(point);
                     target_marker_pub.publish(target_marker);
                     break;
-                case OBSTACLE_MARKER:
-                    obstacles_marker.points.push_back(point);
-                    obstacles_marker_pub.publish(obstacles_marker);
-                    break;
             }
 }
 
@@ -106,17 +102,12 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
             target_marker.points.push_back(point);
             target_marker_pub.publish(target_marker);
             break;
-        case OBSTACLE_MARKER:
-            obstacles_marker.points.push_back(point);
-            obstacles_marker_pub.publish(obstacles_marker);
-            break;
     }
 
 }
 
-
 //publishing all paths
-    void OsmParser::publishPath(){
+    void OsmParser::publishRouteNetwork(){
 
         OSM_NODE testNode;
         nav_msgs::Path path;
@@ -141,14 +132,14 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
 
             path_pub.publish(path);
         }
-
     }
 
 //publishing defined path
-void OsmParser::publishPath(std::vector<int> nodesInPath) {
+void OsmParser::publishRefusedPath(std::vector<int> nodesInPath) {
 
-    sh_path.poses.clear();
-    sh_path.header.frame_id = "/map";
+    nav_msgs::Path refused_path;
+    refused_path.poses.clear();
+    refused_path.header.frame_id = "/map";
 
     geometry_msgs::PoseStamped pose;
     pose.pose.position.x = 0;
@@ -157,14 +148,12 @@ void OsmParser::publishPath(std::vector<int> nodesInPath) {
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
-        ROS_WARN("node id %d", nodesInPath[i]);
-
         pose.pose.position.x = (startPoint.longitude - nodes[nodesInPath[i]].longitude) * 1000;
         pose.pose.position.y = (startPoint.latitude - nodes[nodesInPath[i]].latitude) * 1000;
-        sh_path.poses.push_back(pose);
+        refused_path.poses.push_back(pose);
     }
 
-    shortest_path_pub.publish(sh_path);
+    refused_path_pub.publish(refused_path);
 }
 
 //publishing defined path with target geographic point
@@ -181,7 +170,7 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
-        ROS_ERROR("node id %d", nodesInPath[i]);
+        ROS_DEBUG("node id %d", nodesInPath[i]);
 
         pose.pose.position.x = (startPoint.longitude - nodes[nodesInPath[i]].longitude) * 1000;
         pose.pose.position.y = (startPoint.latitude - nodes[nodesInPath[i]].latitude) * 1000;
@@ -231,10 +220,24 @@ int OsmParser::getNearestPoint(double lat, double lon){
            minDistance = distance;
            point.id = nodes[i].id;
         }
-
     }
-
     return point.id;
+}
+
+//return OSM NODE, which contains geographics coordinates
+OsmParser::OSM_NODE OsmParser::getNodeByID(int id){
+
+    return nodes[id];
+}
+
+//distance between two osm nodes
+double OsmParser::getDistance(OSM_NODE node1, OSM_NODE node2){
+    return sqrt(pow(node1.latitude - node2.latitude, 2.0) + pow(node1.longitude - node2.longitude, 2.0)) * 1000;
+}
+
+//angle between two osm nodes
+double OsmParser::getBearing(OSM_NODE node1, OSM_NODE node2){
+    return atan((node1.longitude - node2.longitude)/(node1.latitude - node2.latitude));
 }
 
         /* SETTERS */
@@ -246,18 +249,6 @@ void OsmParser::setStartPoint(double latitude, double longitude){
     this->startPoint.longitude = longitude;
 }
 
-
-//protected function
-
-//distance between two osm nodes
-double OsmParser::getDistance(OSM_NODE node1, OSM_NODE node2){
-    return sqrt(pow(node1.latitude - node2.latitude, 2.0) + pow(node1.longitude - node2.longitude, 2.0)) * 1000;
-}
-
-//angle between two osm nodes
-double OsmParser::getBearing(OSM_NODE node1, OSM_NODE node2){
-    return atan((node1.longitude - node2.longitude)/(node1.latitude - node2.latitude));
-}
 
 //private functions
 
@@ -304,11 +295,6 @@ void OsmParser::createMarkers(){
     //red marker
     target_marker.color.g = 0.0f;
 
-    obstacles_marker = position_marker;
-    //blue marker
-    obstacles_marker.color.r = 0.0f;
-    obstacles_marker.color.g = 0.0f;
-    obstacles_marker.color.b = 1.0f;
 }
 
 //parse all footways in osm maps

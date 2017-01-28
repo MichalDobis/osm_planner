@@ -49,19 +49,19 @@ public:
         sourceID = osm.getNearestPoint(source_lat, source_lon);
         ROS_INFO("source ID %d", sourceID);
         osm.setStartPoint(source_lat, source_lon);
-        osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
+        sleep(1);
+        osm.publishPoint(source_lat, source_lon, OsmParser::CURRENT_POSITION_MARKER);
         sleep(1);
 
-        //draw paths network
-        osm.publishPath();
+        //draw route network
+        osm.publishRouteNetwork();
         sleep(1);
 
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
         ROS_INFO("target ID %d", targetID);
-        osm.publishPoint(targetID, OsmParser::TARGET_POSITION_MARKER);
-        sleep(1);
+        //osm.publishPoint(targetID, OsmParser::TARGET_POSITION_MARKER);
+        //sleep(1);
         osm.publishPoint(target_latitude, target_longitude, OsmParser::TARGET_POSITION_MARKER);
-
 
         //planning and publish final path
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
@@ -109,19 +109,27 @@ private:
         //get current shortest path - vector of osm nodes IDs
        std::vector <int> path = dijkstra.getSolution(targetID);
 
-        for (int i = 0; i < path.size();i++) {
-            ROS_WARN("node id %d", path[i]);
-        }
-        //when index is greather than array size
+        //if index is greather then array size
         if (req.pointID >= path.size()){
             res.success = false;
             return true;
         }
 
+        //get the OSM nodes
+        OsmParser::OSM_NODE node1 = osm.getNodeByID(path[req.pointID]);
+        OsmParser::OSM_NODE node2 = osm.getNodeByID(path[req.pointID + 1]);
+
+        //for drawing deleted path
+        std::vector<int> refused_path(2);
+        refused_path[0] = node1.id;
+        refused_path[1] = node2.id;
+        osm.publishRefusedPath(refused_path);
+
         //delete edge between two osm nodes
-        osm.deleteEdgeOnGraph(path[req.pointID], path[req.pointID + 1]);
-        osm.publishPoint(path[req.pointID], OsmParser::OBSTACLE_MARKER);
+        osm.deleteEdgeOnGraph(node1.id, node2.id);
+
         //replanning shorest path
+        //sourceID = path[req.pointID];   //return back to last position
         dijkstra.setGraph(osm.getGraphOfVertex());
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
@@ -133,9 +141,9 @@ private:
     void changeTarget(const std_msgs::Int32::ConstPtr& msg) {
 
         targetID = msg->data;
-        ROS_ERROR("change target %d", targetID);
+        ROS_WARN("change target %d", targetID);
 
-        osm.publishPath(dijkstra.getSolution(targetID));
+        osm.publishPath(dijkstra.getSolution(targetID), osm.getNodeByID(targetID).latitude, osm.getNodeByID(targetID).longitude);
         osm.publishPoint(targetID, OsmParser::TARGET_POSITION_MARKER);
 
     }
@@ -145,11 +153,11 @@ private:
 
         sourceID = msg->data;
 
-        ROS_ERROR("change source %d", sourceID);
+        ROS_WARN("change source %d", sourceID);
         osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
         sleep(1);
         //todo tato funkcia sa bude vykonvat len docasne, potom sa bude vykonavat v service replanning
-        osm.publishPath(dijkstra.findShortestPath(sourceID, targetID));
+        osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), osm.getNodeByID(sourceID).latitude, osm.getNodeByID(sourceID).longitude);
 
     }
 
@@ -164,7 +172,7 @@ private:
         osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
         sourceID = osm.getNearestPoint(lat, lon);
 
-        ROS_ERROR(" new source %d", sourceID);
+        ROS_WARN(" new source %d", sourceID);
 
        // osm.publishPoint(sourceID, colorPosition);
     }
@@ -176,13 +184,12 @@ private:
         osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
 
         //draw paths network
-        osm.publishPath();
+        osm.publishRouteNetwork();
 
         initialized = true;
     }
 
 };
-
 
 int main(int argc, char **argv) {
 
