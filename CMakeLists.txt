@@ -138,7 +138,9 @@ add_executable(osm_planner_node src/osm_planner_node.cpp)
 target_link_libraries(osm_planner_node dijkstra parser ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
 add_dependencies(osm_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-
+add_executable(navigation_example src/navigation_example.cpp)
+target_link_libraries(navigation_example dijkstra parser ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
+add_dependencies(navigation_example ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #############
 ## Install ##
 #############

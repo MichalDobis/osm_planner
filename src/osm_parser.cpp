@@ -146,7 +146,7 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
             path.poses.push_back(pose);
 
         }
-        usleep(100000);
+        usleep(10000);
 
         path.header.stamp = ros::Time::now();
         path_pub.publish(path);
@@ -193,7 +193,7 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
-        ROS_WARN("shortest path: node id %d", nodesInPath[i]);
+        ROS_DEBUG("shortest path: node id %d", nodesInPath[i]);
 
         pose.pose.position.x = Haversine::getCoordinateX(startPoint, nodes[nodesInPath[i]]);
         pose.pose.position.y = Haversine::getCoordinateY(startPoint, nodes[nodesInPath[i]]);
@@ -255,25 +255,16 @@ int OsmParser::getNearestPointXY(double point_x, double point_y){
 
     double x = Haversine::getCoordinateX(startPoint, nodes[0]);
     double y = Haversine::getCoordinateY(startPoint, nodes[0]);
-
-    ROS_INFO("x = %f, y = %f", x, y);
-
     double minDistance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
-    ROS_WARN("distance = %f", minDistance);
-
 
     for (int i = 0; i < nodes.size(); i++){
         x = Haversine::getCoordinateX(startPoint, nodes[i]);
         y = Haversine::getCoordinateY(startPoint, nodes[i]);
-        ROS_INFO("x = %f, y = %f", x, y);
-        ROS_INFO("distance = %f", minDistance);
 
         double distance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
 
         if (minDistance > distance){
             minDistance = distance;
-            ROS_WARN("distance = %f", minDistance);
-
             id = nodes[i].id;
         }
     }

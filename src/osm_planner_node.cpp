@@ -128,6 +128,8 @@ private:
 
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
         res.success = true;
+        ROS_ERROR("replanning target ID %d", targetID);
+
         return true;
     }
 
@@ -211,16 +213,17 @@ private:
         double y = msg->pose.pose.position.y;
 
         sourceID = osm.getNearestPointXY(x, y);
-        ROS_WARN("change source %d", sourceID);
+        ROS_INFO("change position ID %d", sourceID);
 
         osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
     }
 
     void initMap(double lat, double lon){
 
-        ROS_INFO("source ID %d", sourceID);
         osm.setStartPoint(lat, lon);
+        sourceID = osm.getNearestPoint(lat,lon);
         osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
+        ROS_INFO("source ID %d", sourceID);
 
         //draw paths network
         osm.publishRouteNetwork();
