@@ -473,8 +473,7 @@ double OsmParser::Haversine::getDistance(OsmParser::OSM_NODE node1, OsmParser::O
                cos(node1.latitude * DEG2RAD) * cos(node2.latitude * DEG2RAD) *
                sin(dLon/2) * sin(dLon/2);
     double c = 2 * atan2(sqrt(a), sqrt(1-a));
-    double d = R * c ;
-    return d/100;
+    return  R * c ;
 }
 
 double OsmParser::Haversine::getCoordinateX(double lon1, double lon2, double lat1, double lat2){
@@ -483,7 +482,7 @@ double OsmParser::Haversine::getCoordinateX(double lon1, double lon2, double lat
     double latAverage = (lat1 + lat2)/2;
     double a = cos(latAverage * DEG2RAD) * cos(latAverage * DEG2RAD) *
                sin(dLon/2) * sin(dLon/2);
-    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a))/100;
+    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a));
 
     return lon1 < lon2 ? dist : -dist;
 }
@@ -494,7 +493,7 @@ double OsmParser::Haversine::getCoordinateX(OsmParser::OSM_NODE node1, OsmParser
     double latAverage = (node1.latitude + node2.latitude)/2;
     double a = cos(latAverage * DEG2RAD) * cos(latAverage * DEG2RAD) *
                sin(dLon/2) * sin(dLon/2);
-    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a))/100;
+    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a));
 
     return node1.longitude < node2.longitude ? dist : -dist;
 }
@@ -505,7 +504,7 @@ double OsmParser::Haversine::getCoordinateY(double lat1, double lat2){
     static double R = 6371e3;
     double dLat = lat2 * DEG2RAD - lat1 * DEG2RAD;
     double a = sin(dLat/2) * sin(dLat/2);
-    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a))/100;
+    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a));
 
     return lat1 < lat2 ? dist : -dist;
 }
@@ -515,7 +514,7 @@ double OsmParser::Haversine::getCoordinateY(OsmParser::OSM_NODE node1, OsmParser
     static double R = 6371e3;
     double dLat = node2.latitude * DEG2RAD - node1.latitude * DEG2RAD;
     double a = sin(dLat/2) * sin(dLat/2);
-    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a))/100;
+    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a));
 
     return node1.latitude < node2.latitude ? dist : -dist;
 }
