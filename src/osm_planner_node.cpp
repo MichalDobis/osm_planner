@@ -128,7 +128,7 @@ private:
 
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
         res.success = true;
-        ROS_ERROR("replanning target ID %d", targetID);
+        ROS_WARN("getting target ID %d planning trajectory...", targetID);
 
         return true;
     }
