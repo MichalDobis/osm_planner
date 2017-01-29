@@ -56,7 +56,7 @@ OsmParser::OsmParser(std::string xml){
         hRootNode=TiXmlHandle(nodeElement);
         hRootWay=TiXmlHandle(wayElement);
 
-        createWays(&hRootWay);
+        createWays(&hRootWay,"highway", "footway");
         createNodes(&hRootNode);
         createNetwork();
         createMarkers();
@@ -313,16 +313,20 @@ void OsmParser::createMarkers(){
 
 }
 
-//parse all footways in osm maps
-//todo parametrizovat funkciu na vyber roznych ciest napr. footway
-    void OsmParser::createWays(TiXmlHandle* hRootWay){
+//parse all ways in osm maps if osm_key = "null"
+//else parse selected type of way.
+//example:
+// osm_key = "highway"
+// osm_value = "footway"
+// will selected only footways
+    void OsmParser::createWays(TiXmlHandle* hRootWay, std::string osm_key, std::string osm_value){
 
         ways.clear();
         TiXmlElement* wayElement = hRootWay->Element();
 
         OSM_WAY wayTmp;
         TiXmlElement* tag;
-        int counter = 1;
+
         //prejde vsetky elementy way
         for( wayElement; wayElement; wayElement = wayElement->NextSiblingElement("way")){
 
@@ -335,7 +339,7 @@ void OsmParser::createMarkers(){
                 std::string key(tag->Attribute("k"));
                 std::string value(tag->Attribute("v"));
 
-                if (key == "highway" && value == "footway"){
+                if (key == "null" || (key == osm_key && value == osm_value)){
 
                     wayElement->Attribute("id", &wayTmp.id);
                     getNodesInWay(wayElement, &wayTmp); //finding all nodes located in selected way

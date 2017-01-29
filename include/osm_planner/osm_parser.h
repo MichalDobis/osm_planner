@@ -103,7 +103,7 @@ private:
 
     void createMarkers();
 
-    void createWays(TiXmlHandle* hRootWay);
+    void createWays(TiXmlHandle* hRootWay, std::string osm_key, std::string osm_value);
     void createNodes(TiXmlHandle *hRootNode);
     void createNetwork();
     void getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way);

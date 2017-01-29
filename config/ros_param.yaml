@@ -1,4 +1,6 @@
 map_frame: "/map"
 topic_shortest_path: "shortest_path"
-topic_gps_position: "fix"
+topic_position_type: 1   #1 - use geographics coordinates
+                         #2 - use cartezian coordinates
+topic_position_name: "fix"
 

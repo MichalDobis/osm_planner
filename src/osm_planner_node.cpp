@@ -12,9 +12,14 @@
 #include <osm_planner/cancelledPoint.h>
 #include <std_msgs/Int32.h>
 #include <std_srvs/Empty.h>
+#include <nav_msgs/Odometry.h>
 
 class OsmPlanner{
 public:
+
+    const static int GEOGRAPHICS_COORDINATES = 1;
+    const static int CARTEZIAN_COORDINATES = 2;
+
     OsmPlanner(std::string file) :
             osm(file),
             dijkstra(osm.getGraphOfVertex()), targetID(100), sourceID(130), initialized(false)
@@ -24,13 +29,22 @@ public:
         ros::NodeHandle n;
 
         std::string topic_name;
-        n.param<std::string>("topic_gps_position", topic_name, "/fix");
+        int topic_type;
+        n.param<std::string>("topic_position_name", topic_name, "/position");
+        n.param<int>("topic_position_type", topic_type, 1);
+
         //subscribers
-        gps_position_sub = n.subscribe(topic_name, 1, &OsmPlanner::gpsCallback, this);
+        if (topic_type == GEOGRAPHICS_COORDINATES){
+            position_sub = n.subscribe(topic_name, 1, &OsmPlanner::gpsCallback, this);
+        } else if (topic_type == CARTEZIAN_COORDINATES) {
+            position_sub = n.subscribe(topic_name, 1, &OsmPlanner::odometryCallback, this);
+        } else throw std::runtime_error("Load bad parameter topic_position_type");
 
         //services
         replanning_service = n.advertiseService("replanning", &OsmPlanner::replanning, this);
         cancel_point_service = n.advertiseService("cancel_point", &OsmPlanner::cancelPoint, this);
+        init_service = n.advertiseService("init", &OsmPlanner::init, this);
+
 
         //****************TEST PLANNING PATH FROM PARAM**********************//
         //-------------------------------------------------------------------//
@@ -90,16 +104,23 @@ private:
 
     /* Subscribers */
     ros::Subscriber replanning_sub;
-    ros::Subscriber gps_position_sub;
+    ros::Subscriber position_sub;
     ros::Subscriber change_source_sub;
 
     /* Services */
     ros::ServiceServer replanning_service;
+    ros::ServiceServer init_service;
     ros::ServiceServer cancel_point_service;
+
+    bool init(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
+
+        initMap(req.target.latitude, req.target.longitude);
+        return true;
+    }
 
     bool replanning(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
-       target_latitude = req.target.latitude;
+        target_latitude = req.target.latitude;
         target_longitude = req.target.longitude;
 
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
@@ -171,17 +192,30 @@ private:
 
     void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
 
+        if (!initialized)
+            return;
 
         double lat = msg->latitude;
         double lon = msg->longitude;
-
-        if (!initialized) init(lat, lon);
 
         osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
         sourceID = osm.getNearestPoint(lat, lon);
     }
 
-    void init(double lat, double lon){
+    void odometryCallback(const nav_msgs::Odometry::ConstPtr& msg) {
+
+        if (!initialized)
+            return;
+
+        double x = msg->pose.pose.position.x;
+        double y = msg->pose.pose.position.y;
+
+
+        /*osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
+        sourceID = osm.getNearestPoint(lat, lon);*/
+    }
+
+    void initMap(double lat, double lon){
 
         ROS_INFO("source ID %d", sourceID);
         osm.setStartPoint(lat, lon);

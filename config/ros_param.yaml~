@@ -1,0 +1,5 @@
+map_frame: "/map"
+topic_shortest_path: "shortest_path"
+topic_position_type:
+topic_position_name: "fix"
+
