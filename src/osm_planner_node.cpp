@@ -210,9 +210,10 @@ private:
         double x = msg->pose.pose.position.x;
         double y = msg->pose.pose.position.y;
 
+        sourceID = osm.getNearestPointXY(x, y);
+        ROS_WARN("change source %d", sourceID);
 
-        /*osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
-        sourceID = osm.getNearestPoint(lat, lon);*/
+        osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
     }
 
     void initMap(double lat, double lon){

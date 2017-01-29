@@ -50,6 +50,7 @@ public:
     //GETTERS
     std::vector< std::vector<double> > getGraphOfVertex(); //for dijkstra algorithm
     int getNearestPoint(double lat, double lon); //return OSM node ID
+    int getNearestPointXY(double point_x, double point_y); //return OSM node ID
     OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
 
     //SETTERS

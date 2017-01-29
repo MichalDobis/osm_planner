@@ -248,6 +248,38 @@ int OsmParser::getNearestPoint(double lat, double lon){
     return point.id;
 }
 
+
+int OsmParser::getNearestPointXY(double point_x, double point_y){
+
+    int id = nodes[0].id;
+
+    double x = Haversine::getCoordinateX(startPoint, nodes[0]);
+    double y = Haversine::getCoordinateY(startPoint, nodes[0]);
+
+    ROS_INFO("x = %f, y = %f", x, y);
+
+    double minDistance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
+    ROS_WARN("distance = %f", minDistance);
+
+
+    for (int i = 0; i < nodes.size(); i++){
+        x = Haversine::getCoordinateX(startPoint, nodes[i]);
+        y = Haversine::getCoordinateY(startPoint, nodes[i]);
+        ROS_INFO("x = %f, y = %f", x, y);
+        ROS_INFO("distance = %f", minDistance);
+
+        double distance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
+
+        if (minDistance > distance){
+            minDistance = distance;
+            ROS_WARN("distance = %f", minDistance);
+
+            id = nodes[i].id;
+        }
+    }
+    return id;
+}
+
 //return OSM NODE, which contains geographics coordinates
 OsmParser::OSM_NODE OsmParser::getNodeByID(int id){
 
@@ -284,9 +316,9 @@ void OsmParser::createMarkers(){
     position_marker.type = visualization_msgs::Marker::POINTS;
     line_list.type = visualization_msgs::Marker::ARROW;
 
-    line_list.scale.x = 0.05;
-    line_list.scale.y = 0.05;
-    line_list.scale.z = 0.05;
+    line_list.scale.x = 2.0;
+    line_list.scale.y = 2.0;
+    line_list.scale.z = 2.0;
 
     line_list.color.r = 1.0f;
     line_list.color.g = 0.0f;
@@ -295,9 +327,9 @@ void OsmParser::createMarkers(){
 
     line_list.lifetime = ros::Duration(100);
 
-    position_marker.scale.x = 0.05;
-    position_marker.scale.y = 0.05;
-    position_marker.scale.z = 0.05;
+    position_marker.scale.x = 2.0;
+    position_marker.scale.y = 2.0;
+    position_marker.scale.z = 2.0;
 
     position_marker.lifetime = ros::Duration(100);
 
