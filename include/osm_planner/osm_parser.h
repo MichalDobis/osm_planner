@@ -11,7 +11,9 @@
 #include <visualization_msgs/Marker.h>
 #include <nav_msgs/Path.h>
 
-class OsmParser {
+
+
+class OsmParser{
 public:
 
     typedef struct osm_node {
@@ -49,14 +51,27 @@ public:
     std::vector< std::vector<double> > getGraphOfVertex(); //for dijkstra algorithm
     int getNearestPoint(double lat, double lon); //return OSM node ID
     OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
-    static double getDistance(OSM_NODE node1, OSM_NODE node2);
-    double getCoordinateX(double lon1, double lon2, double lat1, double lat2);
-    double getCoordinateY(double lat1, double lat2);
-
-    static double getBearing(OSM_NODE node1, OSM_NODE node2);
 
     //SETTERS
     void setStartPoint(double latitude, double longitude); //set the zero point in cartezian coordinates
+
+    //Embedded class for calculating distance and bearing
+    class Haversine{
+
+        //Functions was inspired by: http://www.movable-type.co.uk/scripts/latlong.html
+    public:
+        static double getDistance(OsmParser::OSM_NODE node1, OsmParser::OSM_NODE node2);
+        static double getCoordinateX(double lon1, double lon2, double lat1, double lat2);
+        static double getCoordinateX(OsmParser::OSM_NODE node1, OsmParser::OSM_NODE node2);
+        static double getCoordinateY(double lat1, double lat2);
+        static double getCoordinateY(OsmParser::OSM_NODE node1, OsmParser::OSM_NODE node2);
+        static double getBearing(OsmParser::OSM_NODE node1, OsmParser::OSM_NODE node2);
+
+    private:
+        const static double R = 6371e3;
+        const static double DEG2RAD = M_PI/180;
+        const static double RAD2DEG = 180/M_PI;
+    };
 
 private:
 
@@ -94,4 +109,6 @@ private:
     void getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way);
     bool translateID(int id, int *ret_value);
 };
+
+
 #endif //PROJECT_OSM_PARSER_H

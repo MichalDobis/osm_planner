@@ -75,26 +75,22 @@ void OsmParser::publishPoint(double latitude, double longitude, int marker_type)
     point.x = 0;
     point.y = 0;
 
-   // point.x = (startPoint.longitude - longitude) * 1000;
-   // point.y = (startPoint.latitude - latitude) * 1000;
+    point.x = Haversine::getCoordinateX(startPoint.longitude, longitude, startPoint.latitude, latitude);
+    point.y = Haversine::getCoordinateY(startPoint.latitude, latitude);
 
-            point.x = getCoordinateX(startPoint.longitude, longitude, startPoint.latitude, latitude);
-            point.y = getCoordinateY(startPoint.latitude, latitude);
-
-            switch (marker_type){
-                case CURRENT_POSITION_MARKER:
-                    position_marker.points.clear();
-                    position_marker.points.push_back(point);
-                    position_marker_pub.publish(position_marker);
-                    break;
-                case TARGET_POSITION_MARKER:
-                    target_marker.points.clear();
-                    target_marker.points.push_back(point);
-                    target_marker_pub.publish(target_marker);
-                    break;
-            }
+    switch (marker_type){
+         case CURRENT_POSITION_MARKER:
+            position_marker.points.clear();
+            position_marker.points.push_back(point);
+            position_marker_pub.publish(position_marker);
+            break;
+         case TARGET_POSITION_MARKER:
+            target_marker.points.clear();
+            target_marker.points.push_back(point);
+            target_marker_pub.publish(target_marker);
+            break;
+     }
 }
-
 
 
 void OsmParser::publishPoint(int pointID, int marker_type) {
@@ -107,11 +103,8 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
     point.x = 0;
     point.y = 0;
 
-    //point.x = (startPoint.longitude - nodes[pointID].longitude) * 1000;
-   // point.y = (startPoint.latitude - nodes[pointID].latitude) * 1000;
-
-    point.x = getCoordinateX(startPoint.longitude, nodes[pointID].longitude, startPoint.latitude, nodes[pointID].latitude);
-    point.y = getCoordinateY(startPoint.latitude, nodes[pointID].latitude);
+    point.x = Haversine::getCoordinateX(startPoint, nodes[pointID]);
+    point.y = Haversine::getCoordinateY(startPoint, nodes[pointID]);
 
     switch (marker_type){
         case CURRENT_POSITION_MARKER:
@@ -134,33 +127,31 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
     if (!visualization)
         return;
 
-        OSM_NODE testNode;
-        nav_msgs::Path path;
-        path.header.frame_id = map_frame;
+    OSM_NODE testNode;
+    nav_msgs::Path path;
+    path.header.frame_id = map_frame;
 
-        geometry_msgs::PoseStamped pose;
-        pose.pose.position.x = 0;
-        pose.pose.position.y = 0;
-        pose.pose.position.z = 0;
+    geometry_msgs::PoseStamped pose;
+    pose.pose.position.x = 0;
+    pose.pose.position.y = 0;
+    pose.pose.position.z = 0;
 
-        for (int i = 0; i < ways.size(); i++){
-            path.poses.clear();
+    for (int i = 0; i < ways.size(); i++){
+        path.poses.clear();
 
-            for (int j = 0; j < ways[i].nodesId.size(); j++){
+        for (int j = 0; j < ways[i].nodesId.size(); j++){
 
-               // pose.pose.position.x = (startPoint.longitude - nodes[ways[i].nodesId[j]].longitude) * 1000;
-               // pose.pose.position.y = (startPoint.latitude - nodes[ways[i].nodesId[j]].latitude) * 1000;
-                pose.pose.position.x = getCoordinateX(startPoint.longitude, nodes[ways[i].nodesId[j]].longitude, startPoint.latitude, nodes[ways[i].nodesId[j]].latitude);
-                pose.pose.position.y = getCoordinateY(startPoint.latitude, nodes[ways[i].nodesId[j]].latitude);
-                path.poses.push_back(pose);
+            pose.pose.position.x = Haversine::getCoordinateX(startPoint, nodes[ways[i].nodesId[j]]);
+            pose.pose.position.y = Haversine::getCoordinateY(startPoint, nodes[ways[i].nodesId[j]]);
+            path.poses.push_back(pose);
 
-            }
-            usleep(100000);
-
-            path.header.stamp = ros::Time::now();
-            path_pub.publish(path);
         }
+        usleep(100000);
+
+        path.header.stamp = ros::Time::now();
+        path_pub.publish(path);
     }
+}
 
 //publishing defined path
 void OsmParser::publishRefusedPath(std::vector<int> nodesInPath) {
@@ -179,10 +170,8 @@ void OsmParser::publishRefusedPath(std::vector<int> nodesInPath) {
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
-      //  pose.pose.position.x = (startPoint.longitude - nodes[nodesInPath[i]].longitude) * 1000;
-       // pose.pose.position.y = (startPoint.latitude - nodes[nodesInPath[i]].latitude) * 1000;
-        pose.pose.position.x = getCoordinateX(startPoint.longitude,  nodes[nodesInPath[i]].longitude, startPoint.latitude, nodes[nodesInPath[i]].latitude);
-        pose.pose.position.y = getCoordinateY(startPoint.latitude, nodes[nodesInPath[i]].latitude);
+        pose.pose.position.x = Haversine::getCoordinateX(startPoint, nodes[nodesInPath[i]]);
+        pose.pose.position.y = Haversine::getCoordinateY(startPoint, nodes[nodesInPath[i]]);
         refused_path.poses.push_back(pose);
     }
 
@@ -206,18 +195,14 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
 
         ROS_WARN("shortest path: node id %d", nodesInPath[i]);
 
-       // pose.pose.position.x = (startPoint.longitude - nodes[nodesInPath[i]].longitude) * 1000;
-      //  pose.pose.position.y = (startPoint.latitude - nodes[nodesInPath[i]].latitude) * 1000;
-        pose.pose.position.x = getCoordinateX(startPoint.longitude,  nodes[nodesInPath[i]].longitude, startPoint.latitude, nodes[nodesInPath[i]].latitude);
-        pose.pose.position.y = getCoordinateY(startPoint.latitude, nodes[nodesInPath[i]].latitude);
+        pose.pose.position.x = Haversine::getCoordinateX(startPoint, nodes[nodesInPath[i]]);
+        pose.pose.position.y = Haversine::getCoordinateY(startPoint, nodes[nodesInPath[i]]);
         pose.header.seq = i;
         sh_path.poses.push_back(pose);
     }
 
-    //pose.pose.position.x = (startPoint.longitude - target_lon) * 1000;
-   // pose.pose.position.y = (startPoint.latitude - target_lat) * 1000;
-    pose.pose.position.x = getCoordinateX(startPoint.longitude,  target_lon, startPoint.latitude, target_lat);
-    pose.pose.position.y = getCoordinateY(startPoint.latitude, target_lat);
+    pose.pose.position.x = Haversine::getCoordinateX(startPoint.longitude, target_lon, startPoint.latitude, target_lat);
+    pose.pose.position.y = Haversine::getCoordinateY(startPoint.latitude, target_lat);
     pose.header.seq = pose.header.seq + 1;
     sh_path.poses.push_back(pose);
     sh_path.header.stamp = ros::Time::now();
@@ -248,12 +233,12 @@ int OsmParser::getNearestPoint(double lat, double lon){
     point.latitude = lat;
     point.id = 0;
 
-    double distance = getDistance(point, nodes[0]);
+    double distance = Haversine::getDistance(point, nodes[0]);
     double minDistance = distance;
 
 
     for (int i = 0; i < nodes.size(); i++){
-       distance = getDistance(point, nodes[i]);
+       distance = Haversine::getDistance(point, nodes[i]);
 
         if (minDistance > distance){
            minDistance = distance;
@@ -268,80 +253,6 @@ OsmParser::OSM_NODE OsmParser::getNodeByID(int id){
 
     return nodes[id];
 }
-
-//distance between two osm nodes
-double OsmParser::getDistance(OSM_NODE node1, OSM_NODE node2){
-    //Haversine formula
-
-  /*  var R = 6371e3; // metres
-    var φ1 = lat1.toRadians();
-    var φ2 = lat2.toRadians();
-    var Δφ = (lat2-lat1).toRadians();
-    var Δλ = (lon2-lon1).toRadians();
-
-    var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-    var d = R * c;*/
-
-    static double R = 6371e3;// 6378137; // Radius of earth in M
-    R = 6378137;
-    R = 6373e3;
-   // double lat1 =
-    double dLat = node2.latitude * M_PI / 180 - node1.latitude * M_PI / 180;
-    double dLon = node2.longitude * M_PI / 180 - node1.longitude * M_PI / 180;
-    double a = sin(dLat/2) * sin(dLat/2) +
-            cos(node1.latitude * M_PI / 180) * cos(node2.latitude * M_PI / 180) *
-            sin(dLon/2) * sin(dLon/2);
-    double c = 2 * atan2(sqrt(a), sqrt(1-a));
-    double d = R * c ;
-
-    //ROS_ERROR("d: %f", d);
-    return d/100;
-    /*double x = R * sqrt(2*(1 - cos(node1.latitude * M_PI / 180 - node2.latitude * M_PI/ 180)));
-    double y = R * sqrt(2*(1 - cos(node1.longitude * M_PI / 180 - node2.longitude * M_PI/ 180)));
-    double dist = sqrt(pow(x,2.0) + pow(y,2.0));*/
-  //  ROS_ERROR("x: %f y: %f dist %f",x,y, dist);
-   // return 1;
-
-   // return sqrt(pow(node1.latitude - node2.latitude, 2.0) + pow(node1.longitude - node2.longitude, 2.0)) * 1000;
-
-}
-
-double OsmParser::getCoordinateY(double lat1, double lat2){
-
-    static double R = 6371e3;
-     double dLat = lat2 * M_PI / 180 - lat1 * M_PI / 180;
-    double a = sin(dLat/2) * sin(dLat/2);
-    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a))/100;
-
-    dist =  lat1 < lat2 ? dist : -dist;
-    ROS_WARN("Y %f", dist);
-   return dist;
-    // d = R * c ;
-}
-
-double OsmParser::getCoordinateX(double lon1, double lon2, double lat1, double lat2){
-
-    static double R = 6371e3;
-    double dLon = lon2 * M_PI / 180 - lon1 * M_PI / 180;
-    double latAverage = (lat1 + lat2)/2;
-    double a = cos(latAverage * M_PI / 180) * cos(latAverage * M_PI / 180) *
-        sin(dLon/2) * sin(dLon/2);
-    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a))/100;
-
-    dist = lon1 < lon2 ? dist : -dist;
-    ROS_WARN("X %f", dist);
-    return dist;
-}
-
-//angle between two osm nodes
-double OsmParser::getBearing(OSM_NODE node1, OSM_NODE node2){
-    return atan((node1.longitude - node2.longitude)/(node1.latitude - node2.latitude));
-}
-
         /* SETTERS */
 
 void OsmParser::setStartPoint(double latitude, double longitude){
@@ -481,7 +392,7 @@ void OsmParser::createMarkers(){
             //prejde vsetky uzly na ceste
             for (int j = 0; j < ways[i].nodesId.size() - 1; j++){
                 //vypocita vzdialenost medzi susednimi uzlami
-                distance = getDistance(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j + 1]]);
+                distance = Haversine::getDistance(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j + 1]]);
                 //
                 if (networkArray[ways[i].nodesId[j]] [ways[i].nodesId[j + 1]] != 0)
                     ROS_ERROR("pozicia [%d, %d] je obsadena - toto by nemalo nastat",ways[i].nodesId[j], ways[i].nodesId[j + 1]);
@@ -540,3 +451,90 @@ void OsmParser::createMarkers(){
         }
         return false;
     }
+
+
+
+//Embedded class for calculating distance and bearing
+//Functions was inspired by: http://www.movable-type.co.uk/scripts/latlong.html
+double OsmParser::Haversine::getDistance(OsmParser::OSM_NODE node1, OsmParser::OSM_NODE node2){
+
+   /*  Haversine formula:
+    *  a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
+    *  c = 2 ⋅ atan2( √a, √(1−a) )
+    *  d = R ⋅ c
+    *
+    *  φ - latitude;
+    *  λ - longitude;
+    */
+
+    double dLat = node2.latitude * DEG2RAD - node1.latitude * DEG2RAD;
+    double dLon = node2.longitude * DEG2RAD - node1.longitude * DEG2RAD;
+    double a = sin(dLat/2) * sin(dLat/2) +
+               cos(node1.latitude * DEG2RAD) * cos(node2.latitude * DEG2RAD) *
+               sin(dLon/2) * sin(dLon/2);
+    double c = 2 * atan2(sqrt(a), sqrt(1-a));
+    double d = R * c ;
+    return d/100;
+}
+
+double OsmParser::Haversine::getCoordinateX(double lon1, double lon2, double lat1, double lat2){
+
+    double dLon = lon2 * DEG2RAD - lon1 * DEG2RAD;
+    double latAverage = (lat1 + lat2)/2;
+    double a = cos(latAverage * DEG2RAD) * cos(latAverage * DEG2RAD) *
+               sin(dLon/2) * sin(dLon/2);
+    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a))/100;
+
+    return lon1 < lon2 ? dist : -dist;
+}
+
+double OsmParser::Haversine::getCoordinateX(OsmParser::OSM_NODE node1, OsmParser::OSM_NODE node2){
+
+    double dLon = node2.longitude * DEG2RAD - node1.longitude * DEG2RAD;
+    double latAverage = (node1.latitude + node2.latitude)/2;
+    double a = cos(latAverage * DEG2RAD) * cos(latAverage * DEG2RAD) *
+               sin(dLon/2) * sin(dLon/2);
+    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a))/100;
+
+    return node1.longitude < node2.longitude ? dist : -dist;
+}
+
+
+double OsmParser::Haversine::getCoordinateY(double lat1, double lat2){
+
+    static double R = 6371e3;
+    double dLat = lat2 * DEG2RAD - lat1 * DEG2RAD;
+    double a = sin(dLat/2) * sin(dLat/2);
+    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a))/100;
+
+    return lat1 < lat2 ? dist : -dist;
+}
+
+double OsmParser::Haversine::getCoordinateY(OsmParser::OSM_NODE node1, OsmParser::OSM_NODE node2){
+
+    static double R = 6371e3;
+    double dLat = node2.latitude * DEG2RAD - node1.latitude * DEG2RAD;
+    double a = sin(dLat/2) * sin(dLat/2);
+    double dist = R * 2 * atan2(sqrt(a), sqrt(1-a))/100;
+
+    return node1.latitude < node2.latitude ? dist : -dist;
+}
+
+double OsmParser::Haversine::getBearing(OsmParser::OSM_NODE node1, OsmParser::OSM_NODE node2) {
+
+   /*   Haversine formula:
+    *   a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
+    *   c = 2 ⋅ atan2( √a, √(1−a) )
+    *   d = R ⋅ c
+    *
+    *  φ - latitude;
+    *  λ - longitude;
+    */
+
+    double dLon = node2.longitude * DEG2RAD - node1.longitude * DEG2RAD;
+
+    double y = sin(dLon) * cos(node2.latitude * DEG2RAD);
+    double x = cos(node1.latitude * DEG2RAD)*sin(node2.latitude * DEG2RAD) -
+            sin(node1.latitude * DEG2RAD)*cos(node2.latitude * DEG2RAD)*cos(dLon);
+    return atan2(y, x) * RAD2DEG;
+}

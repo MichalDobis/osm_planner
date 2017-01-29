@@ -13,9 +13,6 @@
 #include <std_msgs/Int32.h>
 #include <std_srvs/Empty.h>
 
-//todo
-//1. prepocitat zemepisne suradnice na kartezke - zatial je tam len vzorec x = (lon2 - lon1) * 1000; lon1 je bod v 0
-
 class OsmPlanner{
 public:
     OsmPlanner(std::string file) :
@@ -205,16 +202,8 @@ int main(int argc, char **argv) {
 
 	std::string file = "skuska.osm";
 	n.getParam("filepath", file);
-    OsmParser::OSM_NODE node1;
-    OsmParser::OSM_NODE node2;
 
-    node1.latitude = 48.1457728;
-    node1.longitude = 17.0729109;
-    node2.latitude = 48.1462083;
-    node2.longitude = 17.0731963;
-    OsmParser::getDistance(node1, node2);
     OsmPlanner osm_planner(file);
-
     ros::spin();
 
 return 0;
