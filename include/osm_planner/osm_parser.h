@@ -99,7 +99,7 @@ private:
     //vector arrays of OSM nodes and ways
     std::vector <OSM_WAY> ways;
     std::vector <OSM_NODE> nodes;
-    std::vector <OSM_NODE> interpolated_nodes;
+    std::vector <OSM_NODE_WITH_ID> interpolated_nodes;
     std::vector <TRANSLATE_TABLE> table;
     std::vector <std::vector <double> > networkArray;
 
