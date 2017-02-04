@@ -57,7 +57,7 @@ OsmParser::OsmParser(std::string xml){
         hRootNode=TiXmlHandle(nodeElement);
         hRootWay=TiXmlHandle(wayElement);
 
-        createWays(&hRootWay,"highway", "footway");
+        createWays(&hRootWay, &hRootNode,"highway", "footway");
         createNodes(&hRootNode);
     ROS_ERROR("Number of nodes before interpolate %d ", nodes.size());
     createNetwork(10);
@@ -346,7 +346,26 @@ void OsmParser::createMarkers(){
 // osm_key = "highway"
 // osm_value = "footway"
 // will selected only footways
-    void OsmParser::createWays(TiXmlHandle* hRootWay, std::string osm_key, std::string osm_value){
+    void OsmParser::createWays(TiXmlHandle* hRootWay,TiXmlHandle *hRootNode, std::string osm_key, std::string osm_value){
+
+
+ROS_WARN("time start");
+    std::vector<OSM_NODE_WITH_ID> nodes;
+    OSM_NODE_WITH_ID nodeTmp;
+
+    TiXmlElement *nodeElement = hRootNode->Element();
+
+    for( nodeElement; nodeElement; nodeElement = nodeElement->NextSiblingElement("node")){
+
+
+
+        nodeElement->Attribute("id", &nodeTmp.id);
+        nodeElement->Attribute("lat", &nodeTmp.node.latitude);
+        nodeElement->Attribute("lon", &nodeTmp.node.longitude);
+        nodes.push_back(nodeTmp);
+    }
+
+    ROS_WARN("time stop");
 
         ways.clear();
         TiXmlElement* wayElement = hRootWay->Element();
@@ -369,7 +388,7 @@ void OsmParser::createMarkers(){
                 if (key == "null" || (key == osm_key && value == osm_value)){
 
                     wayElement->Attribute("id", &wayTmp.id);
-                    getNodesInWay(wayElement, &wayTmp); //finding all nodes located in selected way
+                    getNodesInWay(wayElement, &wayTmp, nodes); //finding all nodes located in selected way
                     ways.push_back(wayTmp);
                     break;
                 }
@@ -377,6 +396,65 @@ void OsmParser::createMarkers(){
             }
         }
     }
+
+//finding nodes located on way and fill way.nodesId
+void OsmParser::getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vector<OSM_NODE_WITH_ID> nodes){
+
+    TiXmlHandle hRootNode(0);
+    TiXmlHandle hRootNd(0);
+    TiXmlElement* nodeElement;
+    int id;
+    static int id_new = 0;
+
+    way->nodesId.clear();
+
+    nodeElement = wayElement->FirstChild("nd")->ToElement();
+    hRootNode = TiXmlHandle(nodeElement);
+
+    nodeElement = hRootNode.Element();
+    TRANSLATE_TABLE tableTmp;
+    OSM_NODE_WITH_ID node1;
+    OSM_NODE_WITH_ID node2;
+
+    int counter = 0;
+    for( nodeElement; nodeElement; nodeElement = nodeElement->NextSiblingElement("nd")) {
+
+        nodeElement->Attribute("ref", &id);
+
+        if (counter > 0){
+            memcpy(&node2, &node1, sizeof(node1));
+            node1 = getNodeByOsmId(nodes, id);
+            double dist = Haversine::getDistance(node1.node, node2.node);
+            //ROS_ERROR("dist %f", dist);
+        } else {
+            node1 = getNodeByOsmId(nodes, id);
+        }
+
+        tableTmp.oldID = id;
+        int ret;
+        if (!translateID(tableTmp.oldID, &ret)){
+
+            tableTmp.newID = id_new++;
+            table.push_back(tableTmp);
+            way->nodesId.push_back(tableTmp.newID);
+
+        } else {
+            way->nodesId.push_back(ret);
+        }
+        counter++;
+    }
+
+}
+
+OsmParser::OSM_NODE_WITH_ID OsmParser::getNodeByOsmId(std::vector<OSM_NODE_WITH_ID> nodes, int id) {
+
+    for (int i = 0; i < nodes.size(); i++){
+        if (nodes[i].id == id)
+            return nodes[i];
+    }
+    ROS_ERROR("nenaslo ziadnu nodu - toto by sa nemalo stat");
+    return nodes[0];
+}
 
     //parse all osm nodes and select nodes located in ways (footways)
     void OsmParser::createNodes(TiXmlHandle *hRootNode){
@@ -433,62 +511,9 @@ void OsmParser::createMarkers(){
             }
 
         }
-
-        //INTERPOLATING
-      /*  for (int i = 0; i < networkArray.size(); i++)
-            for (int j = i; j < networkArray.size(); j++)
-                if (networkArray[i][j] > interpolate_distance) {
-                    ROS_WARN("Distance between nodes %d - %d is higher as %f m. It is %f", i, j, interpolate_distance,
-                             networkArray[i][j]);
-
-                    double new_distance = networkArray[i][j]/2;
-                    networkArray[i][j] = new_distance;
-                    networkArray[j][i] = new_distance;
-
-                    std::vector <double> new_array = networkArray[i];
-                    new_array.insert(new_array.begin() + j, new_distance);
-
-                    for (int k = 0; k < networkArray.size(); k++){
-                        networkArray[k].insert(networkArray[k].begin() + j, 0);
-                    }
-                    networkArray.insert(networkArray.begin() + i, new_array);
-                }*/
     }
 
-    //finding nodes located on way and fill way.nodesId
-    void OsmParser::getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way){
 
-        TiXmlHandle hRootNode(0);
-        TiXmlHandle hRootNd(0);
-        TiXmlElement* nodeElement;
-        int id;
-        static int id_new = 0;
-
-        way->nodesId.clear();
-
-        nodeElement = wayElement->FirstChild("nd")->ToElement();
-        hRootNode = TiXmlHandle(nodeElement);
-
-        nodeElement = hRootNode.Element();
-        TRANSLATE_TABLE tableTmp;
-
-        for( nodeElement; nodeElement; nodeElement = nodeElement->NextSiblingElement("nd")) {
-
-            nodeElement->Attribute("ref", &id);
-            tableTmp.oldID = id;
-            int ret;
-            if (!translateID(tableTmp.oldID, &ret)){
-
-                tableTmp.newID = id_new++;
-                table.push_back(tableTmp);
-                way->nodesId.push_back(tableTmp.newID);
-
-            } else {
-                way->nodesId.push_back(ret);
-            }
-        }
-
-    }
 
 //preklada stare osm node ID na nove osm node ID (cielom bolo vytvorit usporiadane indexovanie)
     bool OsmParser::translateID(int id, int *ret_value){
@@ -505,19 +530,34 @@ void OsmParser::createMarkers(){
 
 void OsmParser::interpolate(double interpolate_distance){
 
-    for (int i = 0; i < ways.size(); i++){
+   /* for (int i = 0; i < ways.size(); i++){
         for (int j = 0; j < ways[i].nodesId.size() - 1; j++){
             double distance = Haversine::getDistance(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j + 1]]);
             if (distance >= interpolate_distance){
-                OSM_NODE new_node;
-
+                OSM_NODE new_nodes = getInterpolatedNodes(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j +1]]);
+                nodes.insert(nodes.begin() + ways[i].nodesId[j], new_nodes);
+                //ways[i].nodesId.insert(ways[i].nodesId.begin() + j, new_nodes);
+                for (int k = 0; k < ways.size(); k++)
+                    for (int l = 0; l < ways[k].nodesId.size())
             }
 
         }
 
-    }
+    }*/
 
 }
+
+OsmParser::OSM_NODE OsmParser::getInterpolatedNodes(OSM_NODE node1, OSM_NODE node2){
+
+  //  std::vector<OSM_NODE> new_nodes;
+    OSM_NODE new_node;
+    new_node.latitude = fabs(node1.latitude - node2.latitude)/2 + node1.latitude;
+    new_node.longitude = fabs(node1.longitude - node2.longitude)/2 + node1.longitude;
+
+    //new_nodes.push_back(new_node);
+    return new_node;
+}
+
 
 
 

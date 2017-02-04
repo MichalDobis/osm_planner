@@ -21,6 +21,10 @@ public:
         double longitude;
     } OSM_NODE;
 
+    typedef struct osm_node_with_id{
+        int id;
+        OSM_NODE node;
+    }OSM_NODE_WITH_ID;
     typedef struct osm_way {
         int id;
         std::vector<int> nodesId;
@@ -104,13 +108,15 @@ private:
 
     void createMarkers();
 
-    void createWays(TiXmlHandle* hRootWay, std::string osm_key, std::string osm_value);
+    void createWays(TiXmlHandle* hRootWay, TiXmlHandle *hRootNode, std::string osm_key, std::string osm_value);
     void createNodes(TiXmlHandle *hRootNode);
     void createNetwork(double interpolate_distance);
-    void getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way);
+    void getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vector<OSM_NODE_WITH_ID> nodes);
+    OSM_NODE_WITH_ID getNodeByOsmId(std::vector<OSM_NODE_WITH_ID> nodes, int id);
     bool translateID(int id, int *ret_value);
 
     void interpolate(double interpolate_distance);
+    OSM_NODE getInterpolatedNodes(OSM_NODE node1, OSM_NODE node2);
 };
 
 
