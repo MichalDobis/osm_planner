@@ -430,6 +430,7 @@ void OsmParser::getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vecto
     //------------------------------------------
     OSM_NODE_WITH_ID node_new;
     OSM_NODE_WITH_ID node_old;
+    std::vector <OSM_NODE> new_nodes_list;
     int counter = 0;
     //------------------------------------------
 
@@ -445,13 +446,18 @@ void OsmParser::getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vecto
             double dist = Haversine::getDistance(node_new.node, node_old.node);
 
            if (dist >= interpolation_max_distance){
+               new_nodes_list = getInterpolatedNodes(node_old.node, node_new.node);
+               //node_old.node = getInterpolatedNodes(node_old.node, node_new.node);
                tableTmp.oldID = -1;
-               node_old.id = id_new;
-               tableTmp.newID = id_new++;
-               table.push_back(tableTmp);
-               way->nodesId.push_back(tableTmp.newID);
-               node_old.node = getInterpolatedNodes(node_old.node, node_new.node);
-               interpolated_nodes.push_back(node_old);
+
+               for (int i = 0; i < new_nodes_list.size(); i++) {
+                   memcpy(&node_old.node, &new_nodes_list[i], sizeof(OSM_NODE));
+                   node_old.id = id_new;
+                   tableTmp.newID = id_new++;
+                   table.push_back(tableTmp);
+                   way->nodesId.push_back(tableTmp.newID);
+                   interpolated_nodes.push_back(node_old);
+               }
            }
         } else {
             node_new = getNodeByOsmId(nodes, id);
@@ -490,15 +496,19 @@ OsmParser::OSM_NODE_WITH_ID OsmParser::getNodeByOsmId(std::vector<OSM_NODE_WITH_
     return nodes[0];
 }
 
-OsmParser::OSM_NODE OsmParser::getInterpolatedNodes(OSM_NODE node1, OSM_NODE node2){
+std::vector<OsmParser::OSM_NODE> OsmParser::getInterpolatedNodes(OSM_NODE node1, OSM_NODE node2){
 
-    //  std::vector<OSM_NODE> new_nodes;
+      std::vector<OSM_NODE> new_nodes;
     OSM_NODE new_node;
-    new_node.latitude = (node1.latitude + node2.latitude)/2;
-    new_node.longitude = (node1.longitude + node2.longitude)/2;
+    double dist = Haversine::getDistance(node1, node2);
+    int count_new_nodes = dist / interpolation_max_distance;
 
-    //new_nodes.push_back(new_node);
-    return new_node;
+    for (int i = 0; i < count_new_nodes; i++) {
+        new_node.latitude = ((count_new_nodes - i) * node1.latitude + (i + 1) * node2.latitude) / (count_new_nodes + 1);
+        new_node.longitude = ((count_new_nodes - i) * node1.longitude + (i + 1) * node2.longitude) / (count_new_nodes + 1);
+        new_nodes.push_back(new_node);
+    }
+    return new_nodes;
 }
 
 //------------------------------------------
@@ -533,10 +543,8 @@ OsmParser::OSM_NODE OsmParser::getInterpolatedNodes(OSM_NODE node1, OSM_NODE nod
         //ADDED for interpolation
 //------------------------------------------
         for (int i = 0; i < interpolated_nodes.size(); i++){
-           // if (nodes[interpolated_nodes[i].id].latitude > 0)
-             //   ROS_ERROR("toto by sa nemalo stat v node %d je latitude %f", interpolated_nodes[i].id, nodes[interpolated_nodes[i].id].latitude);
+
           memcpy(&nodes[interpolated_nodes[i].id], &interpolated_nodes[i].node, sizeof(OSM_NODE));
-            //  nodes[interpolated_nodes[i].id] =
         }
  //------------------------------------------
 

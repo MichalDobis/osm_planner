@@ -120,7 +120,7 @@ private:
     bool translateID(int id, int *ret_value);
 
     void interpolate(double interpolate_distance);
-    OSM_NODE getInterpolatedNodes(OSM_NODE node1, OSM_NODE node2);
+    std::vector<OSM_NODE> getInterpolatedNodes(OSM_NODE node1, OSM_NODE node2);
 };
 
 
