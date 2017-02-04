@@ -28,7 +28,8 @@ OsmParser::OsmParser(std::string xml){
             path_pub = n.advertise<nav_msgs::Path>("/route_network", 10);
             refused_path_pub = n.advertise<nav_msgs::Path>("/refused_path", 10);
         } else ROS_ERROR("visualization false");
-    ROS_ERROR("start parsing");
+
+    ros::Time start_time = ros::Time::now();
         TiXmlDocument doc(xml);
         TiXmlNode* osm;
         TiXmlNode* node;
@@ -59,29 +60,16 @@ OsmParser::OsmParser(std::string xml){
         hRootWay=TiXmlHandle(wayElement);
 
 
-
     createWays(&hRootWay, &hRootNode,"highway", "footway");
-        createNodes(&hRootNode);
-    ROS_ERROR("Number of nodes before interpolate %d ", nodes.size());
+    createNodes(&hRootNode);
     createNetwork(10);
-    ROS_ERROR("stop parsing. Number of nodes after interpolate %d ", nodes.size());
+
+    ROS_ERROR("Parsing time %f. Number of nodes %d ",(ros::Time::now() - start_time).toSec(), nodes.size());
 
     createMarkers();
     }
 
-
         /**PUBLISHING FUNCTIONS**/
-
-void OsmParser::publishInterpolatedNodes(){
-
-            for (int i = 0; i < interpolated_nodes.size(); i++){
-                ROS_ERROR("interpolated node lat %f lon %f", interpolated_nodes[i].node.latitude, interpolated_nodes[i].node.longitude);
-                publishPoint(interpolated_nodes[i].node.latitude, interpolated_nodes[i].node.longitude, TARGET_POSITION_MARKER);
-                sleep(1);
-            }
-
-        }
-
 
 void OsmParser::publishPoint(double latitude, double longitude, int marker_type){
 
@@ -364,9 +352,9 @@ void OsmParser::createMarkers(){
 
     //ADDED for interpolation
     //------------------------------------------
+    //getting all OSM nodes for calculating distance between two nodes on the route
     std::vector<OSM_NODE_WITH_ID> nodes;
     OSM_NODE_WITH_ID nodeTmp;
-
     TiXmlElement *nodeElement = hRootNode->Element();
 
     for( nodeElement; nodeElement; nodeElement = nodeElement->NextSiblingElement("node")){
@@ -428,9 +416,9 @@ void OsmParser::getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vecto
 
     //ADDED for interpolation
     //------------------------------------------
-    OSM_NODE_WITH_ID node_new;
-    OSM_NODE_WITH_ID node_old;
-    std::vector <OSM_NODE> new_nodes_list;
+    OSM_NODE_WITH_ID node_new;              //Between this nodes will calculate
+    OSM_NODE_WITH_ID node_old;             //interpolation
+    std::vector <OSM_NODE> new_nodes_list; //List of interpolated nodes
     int counter = 0;
     //------------------------------------------
 
@@ -441,26 +429,24 @@ void OsmParser::getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vecto
         //ADDED for interpolation
         //------------------------------------------
         if (counter > 0){
-            memcpy(&node_old, &node_new, sizeof(node_old));
-            node_new = getNodeByOsmId(nodes, id);
-            double dist = Haversine::getDistance(node_new.node, node_old.node);
+            memcpy(&node_old, &node_new, sizeof(node_old));     //save information about node
+            node_new = getNodeByOsmId(nodes, id);               //get information about new node
 
-           if (dist >= interpolation_max_distance){
-               new_nodes_list = getInterpolatedNodes(node_old.node, node_new.node);
-               //node_old.node = getInterpolatedNodes(node_old.node, node_new.node);
-               tableTmp.oldID = -1;
+             new_nodes_list = getInterpolatedNodes(node_old.node, node_new.node); //do interpolation
+             tableTmp.oldID = -1; //interpolated node hasn't any ID in xml
 
-               for (int i = 0; i < new_nodes_list.size(); i++) {
-                   memcpy(&node_old.node, &new_nodes_list[i], sizeof(OSM_NODE));
-                   node_old.id = id_new;
-                   tableTmp.newID = id_new++;
-                   table.push_back(tableTmp);
-                   way->nodesId.push_back(tableTmp.newID);
-                   interpolated_nodes.push_back(node_old);
-               }
-           }
+             for (int i = 0; i < new_nodes_list.size(); i++) { //get the interpolated nodes
+
+                memcpy(&node_old.node, &new_nodes_list[i], sizeof(OSM_NODE)); //copy information about lon and lat
+                node_old.id = id_new;           //set the ID
+                tableTmp.newID = id_new++;      //set the ID in translate table and increment ID
+                table.push_back(tableTmp);
+                way->nodesId.push_back(tableTmp.newID); //add interpolated node on way
+                interpolated_nodes.push_back(node_old); //add interpolated node in buffer. It will use later.
+             }
+
         } else {
-            node_new = getNodeByOsmId(nodes, id);
+            node_new = getNodeByOsmId(nodes, id);       //get information about first node in way
         }
         //------------------------------------------
 
@@ -486,6 +472,7 @@ void OsmParser::getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vecto
 
 //ADDED for interpolation
 //------------------------------------------
+//Finding nodes by OSM ID
 OsmParser::OSM_NODE_WITH_ID OsmParser::getNodeByOsmId(std::vector<OSM_NODE_WITH_ID> nodes, int id) {
 
     for (int i = 0; i < nodes.size(); i++){
@@ -496,21 +483,24 @@ OsmParser::OSM_NODE_WITH_ID OsmParser::getNodeByOsmId(std::vector<OSM_NODE_WITH_
     return nodes[0];
 }
 
+//INTERPOLATION - main algorithm
 std::vector<OsmParser::OSM_NODE> OsmParser::getInterpolatedNodes(OSM_NODE node1, OSM_NODE node2){
 
       std::vector<OSM_NODE> new_nodes;
     OSM_NODE new_node;
     double dist = Haversine::getDistance(node1, node2);
-    int count_new_nodes = dist / interpolation_max_distance;
+    int count_new_nodes = dist / interpolation_max_distance;    //calculate number of new interpolated nodes
 
     for (int i = 0; i < count_new_nodes; i++) {
+        //weighted average. Example: when count_new_nodes = 2
+        //1. latitude = (2 * node1.latitude - 1*node2.latitude)/3
+        //2. latitude = (1 * node1.latitude - 2*node2.latitude)/3
         new_node.latitude = ((count_new_nodes - i) * node1.latitude + (i + 1) * node2.latitude) / (count_new_nodes + 1);
         new_node.longitude = ((count_new_nodes - i) * node1.longitude + (i + 1) * node2.longitude) / (count_new_nodes + 1);
         new_nodes.push_back(new_node);
     }
     return new_nodes;
 }
-
 //------------------------------------------
 
 
@@ -523,25 +513,23 @@ std::vector<OsmParser::OSM_NODE> OsmParser::getInterpolatedNodes(OSM_NODE node1,
         TiXmlElement *nodeElement = hRootNode->Element();
 
         int id;
-        int i = 0;
-
         for( nodeElement; nodeElement; nodeElement = nodeElement->NextSiblingElement("node")){
 
-
             nodeElement->Attribute("id", &id);
-
             int ret;
             if (!translateID(id, &ret)){
                 continue;
             }
 
-            //nodes[ret].id = ret;
             nodeElement->Attribute("lat", &nodes[ret].latitude);
             nodeElement->Attribute("lon", &nodes[ret].longitude);
         }
 
         //ADDED for interpolation
 //------------------------------------------
+        //Copy interpolated nodes to all nodes
+        //interpolated_nodes[i].node - lat and lon information
+        //interpolated_nodes[i].id - index of nodes from traslate table
         for (int i = 0; i < interpolated_nodes.size(); i++){
 
           memcpy(&nodes[interpolated_nodes[i].id], &interpolated_nodes[i].node, sizeof(OSM_NODE));
@@ -580,7 +568,6 @@ std::vector<OsmParser::OSM_NODE> OsmParser::getInterpolatedNodes(OSM_NODE node1,
     }
 
 
-
 //preklada stare osm node ID na nove osm node ID (cielom bolo vytvorit usporiadane indexovanie)
     bool OsmParser::translateID(int id, int *ret_value){
 
@@ -592,27 +579,6 @@ std::vector<OsmParser::OSM_NODE> OsmParser::getInterpolatedNodes(OSM_NODE node1,
         }
         return false;
     }
-
-
-void OsmParser::interpolate(double interpolate_distance){
-
-   /* for (int i = 0; i < ways.size(); i++){
-        for (int j = 0; j < ways[i].nodesId.size() - 1; j++){
-            double distance = Haversine::getDistance(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j + 1]]);
-            if (distance >= interpolate_distance){
-                OSM_NODE new_nodes = getInterpolatedNodes(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j +1]]);
-                nodes.insert(nodes.begin() + ways[i].nodesId[j], new_nodes);
-                //ways[i].nodesId.insert(ways[i].nodesId.begin() + j, new_nodes);
-                for (int k = 0; k < ways.size(); k++)
-                    for (int l = 0; l < ways[k].nodesId.size())
-            }
-
-        }
-
-    }*/
-
-}
-
 
 
 //Embedded class for calculating distance and bearing

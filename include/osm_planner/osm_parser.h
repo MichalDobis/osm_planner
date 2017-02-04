@@ -25,6 +25,7 @@ public:
         int id;
         OSM_NODE node;
     }OSM_NODE_WITH_ID;
+
     typedef struct osm_way {
         int id;
         std::vector<int> nodesId;
@@ -46,8 +47,6 @@ public:
     void publishRouteNetwork();
     void publishRefusedPath(std::vector<int> nodesInPath);
     void publishPath(std::vector<int> nodesInPath, double target_lat, double target_lon);
-
-    void publishInterpolatedNodes();
 
     //deleting edge on the graph
     void deleteEdgeOnGraph(int nodeID_1, int nodeID_2);
@@ -90,15 +89,11 @@ private:
 
     //visualization msgs
     visualization_msgs::Marker position_marker, target_marker;
-
     //msgs for shortest path
     nav_msgs::Path sh_path;
 
     std::string map_frame; //name of frame for msgs
-
     bool visualization; //enable or disable publishing markers and paths for rviz visualization
-
-    double interpolation_max_distance;
 
     //vector arrays of OSM nodes and ways
     std::vector <OSM_WAY> ways;
@@ -116,11 +111,17 @@ private:
     void createNodes(TiXmlHandle *hRootNode);
     void createNetwork(double interpolate_distance);
     void getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vector<OSM_NODE_WITH_ID> nodes);
-    OSM_NODE_WITH_ID getNodeByOsmId(std::vector<OSM_NODE_WITH_ID> nodes, int id);
     bool translateID(int id, int *ret_value);
 
-    void interpolate(double interpolate_distance);
+    //ADDED for interpolation
+    //------------------------------------------
+    //interpolation - creating more nodes between parameters node1 and node2
     std::vector<OSM_NODE> getInterpolatedNodes(OSM_NODE node1, OSM_NODE node2);
+    double interpolation_max_distance;
+    //finding node by osm id in std::vector<OSM_NODE_WITH_ID> nodes buffer
+    OSM_NODE_WITH_ID getNodeByOsmId(std::vector<OSM_NODE_WITH_ID> nodes, int id);
+    //------------------------------------------
+
 };
 
 

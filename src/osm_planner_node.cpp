@@ -83,10 +83,9 @@ public:
             osm.publishPoint(target_latitude, target_longitude, OsmParser::TARGET_POSITION_MARKER);
 
             //planning and publish final path
-            ROS_ERROR("start_planning");
+            ros::Time start_time = ros::Time::now();
             osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
-            ROS_ERROR("stop_planning");
-            osm.publishInterpolatedNodes();
+            ROS_ERROR("Plan time %f ",(ros::Time::now() - start_time).toSec());
             initialized = true;
         }
         //-------------------------------------------------------------------//
@@ -125,10 +124,10 @@ private:
         target_latitude = req.target.latitude;
         target_longitude = req.target.longitude;
 
+        ros::Time start_time = ros::Time::now();
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
-        ROS_ERROR("start planning");
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
-        ROS_ERROR("stop planning");
+        ROS_ERROR("Plan time %f ",(ros::Time::now() - start_time).toSec());
 
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
         res.success = true;
