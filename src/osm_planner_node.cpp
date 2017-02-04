@@ -45,50 +45,6 @@ public:
         cancel_point_service = n.advertiseService("cancel_point", &OsmPlanner::cancelPoint, this);
         init_service = n.advertiseService("init", &OsmPlanner::init, this);
 
-
-        //****************TEST PLANNING PATH FROM PARAM**********************//
-        //-------------------------------------------------------------------//
-
-
-        bool test;
-        n.param<bool>("/test", test, false);
-        if (test) {
-
-            //subscribers for test
-            replanning_sub = n.subscribe("replanning", 1, &OsmPlanner::changeTarget, this);
-            change_source_sub = n.subscribe("change_source", 1, &OsmPlanner::changeSource, this);
-
-            //finding nereast OSM node
-            double source_lat, source_lon;
-            n.param<double>("target_lon", target_longitude, 1);
-            n.param<double>("target_lat", target_latitude, 1);
-            n.param<double>("source_lon", source_lon, 1);
-            n.param<double>("source_lat", source_lat, 1);
-
-            sourceID = osm.getNearestPoint(source_lat, source_lon);
-            ROS_INFO("source ID %d", sourceID);
-           osm.setStartPoint(source_lat, source_lon);
-            sleep(1);
-            //osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
-            osm.publishPoint(source_lat, source_lon, OsmParser::CURRENT_POSITION_MARKER);
-
-            //draw route network
-           osm.publishRouteNetwork();
-            sleep(1);
-
-            targetID = osm.getNearestPoint(target_latitude, target_longitude);
-
-            ROS_INFO("target ID %d", targetID);
-            //sleep(1);
-            osm.publishPoint(target_latitude, target_longitude, OsmParser::TARGET_POSITION_MARKER);
-
-            //planning and publish final path
-            ros::Time start_time = ros::Time::now();
-            osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
-            ROS_ERROR("Plan time %f ",(ros::Time::now() - start_time).toSec());
-            initialized = true;
-        }
-        //-------------------------------------------------------------------//
     }
 private:
 
@@ -126,12 +82,12 @@ private:
 
         ros::Time start_time = ros::Time::now();
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
+        ROS_WARN("getting target ID %d. Planning trajectory...", targetID);
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
-        ROS_ERROR("Plan time %f ",(ros::Time::now() - start_time).toSec());
+        ROS_INFO("Plan time %f ",(ros::Time::now() - start_time).toSec());
 
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
         res.success = true;
-        ROS_WARN("getting target ID %d planning trajectory...", targetID);
 
         return true;
     }
@@ -164,31 +120,6 @@ private:
         res.success = true;
         return true;
     }
-
-    //*******************************TEST********************************//
-    //-------------------------------------------------------------------//
-    void changeTarget(const std_msgs::Int32::ConstPtr& msg) {
-
-        targetID = msg->data;
-        ROS_WARN("change target %d", targetID);
-
-        osm.publishPath(dijkstra.getSolution(targetID), osm.getNodeByID(targetID).latitude, osm.getNodeByID(targetID).longitude);
-        osm.publishPoint(targetID, OsmParser::TARGET_POSITION_MARKER);
-
-    }
-
-    //len pre test, bude sa pouzivat gpsCallback
-    void changeSource(const std_msgs::Int32::ConstPtr& msg) {
-
-        sourceID = msg->data;
-
-        ROS_WARN("change source %d", sourceID);
-        osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
-        sleep(1);
-        osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), osm.getNodeByID(sourceID).latitude, osm.getNodeByID(sourceID).longitude);
-
-    }
-    //-------------------------------------------------------------------//
 
 
     void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {

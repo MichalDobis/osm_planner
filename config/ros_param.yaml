@@ -3,5 +3,5 @@ topic_shortest_path: "shortest_path"
 topic_position_type: 2   #1 - use geographics coordinates
                          #2 - use cartezian coordinates
 topic_position_name: "position"
-interpolation_max_distance: 1.0
+interpolation_max_distance: 1.0 #Max distance between two nodes of oriented graph
 

@@ -27,7 +27,7 @@ OsmParser::OsmParser(std::string xml){
 
             path_pub = n.advertise<nav_msgs::Path>("/route_network", 10);
             refused_path_pub = n.advertise<nav_msgs::Path>("/refused_path", 10);
-        } else ROS_ERROR("visualization false");
+        }
 
     ros::Time start_time = ros::Time::now();
         TiXmlDocument doc(xml);
@@ -64,7 +64,7 @@ OsmParser::OsmParser(std::string xml){
     createNodes(&hRootNode);
     createNetwork(10);
 
-    ROS_ERROR("Parsing time %f. Number of nodes %d ",(ros::Time::now() - start_time).toSec(), nodes.size());
+    ROS_INFO("Parsing time %f. Number of nodes %d ",(ros::Time::now() - start_time).toSec(), nodes.size());
 
     createMarkers();
     }

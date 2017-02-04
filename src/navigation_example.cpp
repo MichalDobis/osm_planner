@@ -53,22 +53,31 @@ int main(int argc, char **argv) {
     osm_planner::newTarget gps_srv;
 
     //wait all nodes was initialized
-    sleep(3);
+    sleep(5);
 
     //start gps position
     ROS_WARN("SIMULATED ROBOT: setting gps source");
     gps_srv.request.target.latitude = 48.1463634;
     gps_srv.request.target.longitude = 17.0734773;
+    //get from param if exists
+    n.getParam("/source_lon", gps_srv.request.target.longitude);
+    n.getParam("/source_lat",  gps_srv.request.target.latitude);
+
     set_source.call(gps_srv);
 
-//    sleep(3);
     ROS_WARN("SIMULATED ROBOT: setting gps target");
     //target gps position
     gps_srv.request.target.latitude = 48.1455653;
     gps_srv.request.target.longitude = 17.0728155;
+    //get from param if exists
+    n.getParam("/target_lon", gps_srv.request.target.longitude);
+    n.getParam("/target_lat",  gps_srv.request.target.latitude);
+
     set_target.call(gps_srv);
 
-    initialized_path = false;
+    ROS_INFO("SIMULATED ROBOT: Press enter for start movement");
+    scanf("x");
+    ROS_WARN("SIMULATED ROBOT: Starting movement...");
 
     //simulated odometry
     odom.header.frame_id = "/base_link";
@@ -77,7 +86,7 @@ int main(int argc, char **argv) {
     position_pub.publish(odom);
 
     int seq = 0;
-
+    initialized_path = false;
     bool obstacle = false;
 
     ros::Rate rate(1);
