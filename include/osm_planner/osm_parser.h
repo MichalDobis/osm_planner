@@ -47,6 +47,8 @@ public:
     void publishRefusedPath(std::vector<int> nodesInPath);
     void publishPath(std::vector<int> nodesInPath, double target_lat, double target_lon);
 
+    void publishInterpolatedNodes();
+
     //deleting edge on the graph
     void deleteEdgeOnGraph(int nodeID_1, int nodeID_2);
 

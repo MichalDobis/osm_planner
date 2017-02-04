@@ -57,17 +57,30 @@ OsmParser::OsmParser(std::string xml){
         hRootNode=TiXmlHandle(nodeElement);
         hRootWay=TiXmlHandle(wayElement);
 
-        createWays(&hRootWay, &hRootNode,"highway", "footway");
+
+
+    createWays(&hRootWay, &hRootNode,"highway", "footway");
         createNodes(&hRootNode);
     ROS_ERROR("Number of nodes before interpolate %d ", nodes.size());
     createNetwork(10);
     ROS_ERROR("stop parsing. Number of nodes after interpolate %d ", nodes.size());
 
-        createMarkers();
+    createMarkers();
     }
 
 
         /**PUBLISHING FUNCTIONS**/
+
+void OsmParser::publishInterpolatedNodes(){
+
+            for (int i = 0; i < interpolated_nodes.size(); i++){
+                ROS_ERROR("interpolated node lat %f lon %f", interpolated_nodes[i].node.latitude, interpolated_nodes[i].node.longitude);
+                publishPoint(interpolated_nodes[i].node.latitude, interpolated_nodes[i].node.longitude, TARGET_POSITION_MARKER);
+                sleep(1);
+            }
+
+        }
+
 
 void OsmParser::publishPoint(double latitude, double longitude, int marker_type){
 
@@ -84,7 +97,7 @@ void OsmParser::publishPoint(double latitude, double longitude, int marker_type)
 
     switch (marker_type){
          case CURRENT_POSITION_MARKER:
-            position_marker.points.clear();
+          //  position_marker.points.clear();
             position_marker.points.push_back(point);
             position_marker_pub.publish(position_marker);
             break;
@@ -117,7 +130,7 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
             position_marker_pub.publish(position_marker);
             break;
         case TARGET_POSITION_MARKER:
-            target_marker.points.clear();
+           // target_marker.points.clear();
             target_marker.points.push_back(point);
             target_marker_pub.publish(target_marker);
             break;
@@ -429,14 +442,13 @@ void OsmParser::getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vecto
             memcpy(&node_old, &node_new, sizeof(node_old));
             node_new = getNodeByOsmId(nodes, id);
             double dist = Haversine::getDistance(node_new.node, node_old.node);
-           if (dist >= 100){
+           if (dist >= 1000){
                tableTmp.oldID = -1;
                node_old.id = id_new;
                tableTmp.newID = id_new++;
                table.push_back(tableTmp);
                way->nodesId.push_back(tableTmp.newID);
                node_old.node = getInterpolatedNodes(node_old.node, node_new.node);
-               ROS_ERROR("interpolated node lat %f lon %f", node_old.node.latitude, node_old.node.longitude);
                interpolated_nodes.push_back(node_old);
            }
         } else {
@@ -480,8 +492,8 @@ OsmParser::OSM_NODE OsmParser::getInterpolatedNodes(OSM_NODE node1, OSM_NODE nod
 
     //  std::vector<OSM_NODE> new_nodes;
     OSM_NODE new_node;
-    new_node.latitude = fabs(node1.latitude - node2.latitude)/2 + node1.latitude;
-    new_node.longitude = fabs(node1.longitude - node2.longitude)/2 + node1.longitude;
+    new_node.latitude = (node1.latitude - node2.latitude)/2 + node1.latitude;
+    new_node.longitude = (node1.longitude - node2.longitude)/2 + node1.longitude;
 
     //new_nodes.push_back(new_node);
     return new_node;
@@ -515,6 +527,16 @@ OsmParser::OSM_NODE OsmParser::getInterpolatedNodes(OSM_NODE node1, OSM_NODE nod
             nodeElement->Attribute("lat", &nodes[ret].latitude);
             nodeElement->Attribute("lon", &nodes[ret].longitude);
         }
+
+        //ADDED for interpolation
+//------------------------------------------
+        for (int i = 0; i < interpolated_nodes.size(); i++){
+           // if (nodes[interpolated_nodes[i].id].latitude > 0)
+             //   ROS_ERROR("toto by sa nemalo stat v node %d je latitude %f", interpolated_nodes[i].id, nodes[interpolated_nodes[i].id].latitude);
+          memcpy(&nodes[interpolated_nodes[i].id], &interpolated_nodes[i].node, sizeof(OSM_NODE));
+            //  nodes[interpolated_nodes[i].id] =
+        }
+ //------------------------------------------
 
     }
 

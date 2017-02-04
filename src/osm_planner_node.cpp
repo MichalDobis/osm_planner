@@ -86,6 +86,7 @@ public:
             ROS_ERROR("start_planning");
             osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
             ROS_ERROR("stop_planning");
+            osm.publishInterpolatedNodes();
             initialized = true;
         }
         //-------------------------------------------------------------------//
