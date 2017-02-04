@@ -147,6 +147,10 @@ private:
             return true;
         }
 
+        //get the OSM nodes
+        OsmParser::OSM_NODE node1 = osm.getNodeByID(path[req.pointID]);
+        OsmParser::OSM_NODE node2 = osm.getNodeByID(path[req.pointID + 1]);
+
         //for drawing deleted path
         std::vector<int> refused_path(2);
         refused_path[0] = path[req.pointID];
