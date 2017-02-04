@@ -83,8 +83,9 @@ public:
             osm.publishPoint(target_latitude, target_longitude, OsmParser::TARGET_POSITION_MARKER);
 
             //planning and publish final path
+            ROS_ERROR("start_planning");
             osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
-
+            ROS_ERROR("stop_planning");
             initialized = true;
         }
         //-------------------------------------------------------------------//
@@ -124,7 +125,9 @@ private:
         target_longitude = req.target.longitude;
 
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
+        ROS_ERROR("start planning");
         osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
+        ROS_ERROR("stop planning");
 
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
         res.success = true;
@@ -150,12 +153,12 @@ private:
 
         //for drawing deleted path
         std::vector<int> refused_path(2);
-        refused_path[0] = node1.id;
-        refused_path[1] = node2.id;
+        refused_path[0] = path[req.pointID];
+        refused_path[1] = path[req.pointID + 1];
         osm.publishRefusedPath(refused_path);
 
         //delete edge between two osm nodes
-        osm.deleteEdgeOnGraph(node1.id, node2.id);
+        osm.deleteEdgeOnGraph(path[req.pointID], path[req.pointID + 1]);
 
         //replanning shorest path
         sourceID = path[req.pointID];   //return back to last position

@@ -27,6 +27,7 @@ OsmParser::OsmParser(std::string xml){
             path_pub = n.advertise<nav_msgs::Path>("/route_network", 10);
             refused_path_pub = n.advertise<nav_msgs::Path>("/refused_path", 10);
         } else ROS_ERROR("visualization false");
+    ROS_ERROR("start parsing");
         TiXmlDocument doc(xml);
         TiXmlNode* osm;
         TiXmlNode* node;
@@ -58,7 +59,10 @@ OsmParser::OsmParser(std::string xml){
 
         createWays(&hRootWay,"highway", "footway");
         createNodes(&hRootNode);
-        createNetwork();
+    ROS_ERROR("Number of nodes before interpolate %d ", nodes.size());
+    createNetwork(10);
+    ROS_ERROR("stop parsing. Number of nodes after interpolate %d ", nodes.size());
+
         createMarkers();
     }
 
@@ -223,6 +227,7 @@ void OsmParser::deleteEdgeOnGraph(int nodeID_1, int nodeID_2){
 //todo - mozno by bolo lepsie, aby tato funkcia robila funkciu createNerwork() a pole by bolo globalne len v classe Dijkstra
 //getter for dijkstra algorithm
 std::vector< std::vector<double> > OsmParser::getGraphOfVertex(){
+
     return networkArray;
 }
 
@@ -231,7 +236,7 @@ int OsmParser::getNearestPoint(double lat, double lon){
     OSM_NODE point;
     point.longitude = lon;
     point.latitude = lat;
-    point.id = 0;
+    int id  = 0;
 
     double distance = Haversine::getDistance(point, nodes[0]);
     double minDistance = distance;
@@ -242,16 +247,16 @@ int OsmParser::getNearestPoint(double lat, double lon){
 
         if (minDistance > distance){
            minDistance = distance;
-           point.id = nodes[i].id;
+            id = i;
         }
     }
-    return point.id;
+    return id;
 }
 
 
 int OsmParser::getNearestPointXY(double point_x, double point_y){
 
-    int id = nodes[0].id;
+    int id = 0;
 
     double x = Haversine::getCoordinateX(startPoint, nodes[0]);
     double y = Haversine::getCoordinateY(startPoint, nodes[0]);
@@ -265,7 +270,7 @@ int OsmParser::getNearestPointXY(double point_x, double point_y){
 
         if (minDistance > distance){
             minDistance = distance;
-            id = nodes[i].id;
+            id = i;
         }
     }
     return id;
@@ -280,7 +285,6 @@ OsmParser::OSM_NODE OsmParser::getNodeByID(int id){
 
 void OsmParser::setStartPoint(double latitude, double longitude){
 
-    this->startPoint.id = 0;
     this->startPoint.latitude = latitude;
     this->startPoint.longitude = longitude;
 }
@@ -395,7 +399,7 @@ void OsmParser::createMarkers(){
                 continue;
             }
 
-            nodes[ret].id = ret;
+            //nodes[ret].id = ret;
             nodeElement->Attribute("lat", &nodes[ret].latitude);
             nodeElement->Attribute("lon", &nodes[ret].longitude);
         }
@@ -403,7 +407,7 @@ void OsmParser::createMarkers(){
     }
 
     //creating graph for dijkstra algorithm
-    void OsmParser::createNetwork(){
+    void OsmParser::createNetwork(double interpolate_distance){
 
         networkArray.resize(nodes.size());
         //ROS_ERROR("size %d ", networkArray.size());
@@ -430,6 +434,25 @@ void OsmParser::createMarkers(){
 
         }
 
+        //INTERPOLATING
+      /*  for (int i = 0; i < networkArray.size(); i++)
+            for (int j = i; j < networkArray.size(); j++)
+                if (networkArray[i][j] > interpolate_distance) {
+                    ROS_WARN("Distance between nodes %d - %d is higher as %f m. It is %f", i, j, interpolate_distance,
+                             networkArray[i][j]);
+
+                    double new_distance = networkArray[i][j]/2;
+                    networkArray[i][j] = new_distance;
+                    networkArray[j][i] = new_distance;
+
+                    std::vector <double> new_array = networkArray[i];
+                    new_array.insert(new_array.begin() + j, new_distance);
+
+                    for (int k = 0; k < networkArray.size(); k++){
+                        networkArray[k].insert(networkArray[k].begin() + j, 0);
+                    }
+                    networkArray.insert(networkArray.begin() + i, new_array);
+                }*/
     }
 
     //finding nodes located on way and fill way.nodesId
@@ -478,6 +501,24 @@ void OsmParser::createMarkers(){
         }
         return false;
     }
+
+
+void OsmParser::interpolate(double interpolate_distance){
+
+    for (int i = 0; i < ways.size(); i++){
+        for (int j = 0; j < ways[i].nodesId.size() - 1; j++){
+            double distance = Haversine::getDistance(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j + 1]]);
+            if (distance >= interpolate_distance){
+                OSM_NODE new_node;
+
+            }
+
+        }
+
+    }
+
+}
+
 
 
 

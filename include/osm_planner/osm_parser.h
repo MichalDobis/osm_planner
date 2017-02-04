@@ -17,7 +17,6 @@ class OsmParser{
 public:
 
     typedef struct osm_node {
-        int id;
         double latitude;
         double longitude;
     } OSM_NODE;
@@ -96,6 +95,7 @@ private:
     //vector arrays of OSM nodes and ways
     std::vector <OSM_WAY> ways;
     std::vector <OSM_NODE> nodes;
+    std::vector <OSM_NODE> interpolated_nodes;
     std::vector <TRANSLATE_TABLE> table;
     std::vector <std::vector <double> > networkArray;
 
@@ -106,9 +106,11 @@ private:
 
     void createWays(TiXmlHandle* hRootWay, std::string osm_key, std::string osm_value);
     void createNodes(TiXmlHandle *hRootNode);
-    void createNetwork();
+    void createNetwork(double interpolate_distance);
     void getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way);
     bool translateID(int id, int *ret_value);
+
+    void interpolate(double interpolate_distance);
 };
 
 
