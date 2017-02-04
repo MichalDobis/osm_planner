@@ -15,6 +15,7 @@ OsmParser::OsmParser(std::string xml){
         n.param<std::string>("map_frame", map_frame, "/map");
         n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path" );
         n.param<bool>("/visualization", visualization, false);
+        n.param<double>("interpolation_max_distance", interpolation_max_distance, 1000);
 
         //publishers
         shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
@@ -442,7 +443,8 @@ void OsmParser::getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vecto
             memcpy(&node_old, &node_new, sizeof(node_old));
             node_new = getNodeByOsmId(nodes, id);
             double dist = Haversine::getDistance(node_new.node, node_old.node);
-           if (dist >= 5){
+
+           if (dist >= interpolation_max_distance){
                tableTmp.oldID = -1;
                node_old.id = id_new;
                tableTmp.newID = id_new++;

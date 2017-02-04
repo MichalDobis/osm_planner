@@ -98,6 +98,8 @@ private:
 
     bool visualization; //enable or disable publishing markers and paths for rviz visualization
 
+    double interpolation_max_distance;
+
     //vector arrays of OSM nodes and ways
     std::vector <OSM_WAY> ways;
     std::vector <OSM_NODE> nodes;
