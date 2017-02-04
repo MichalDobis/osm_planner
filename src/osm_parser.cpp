@@ -442,7 +442,7 @@ void OsmParser::getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vecto
             memcpy(&node_old, &node_new, sizeof(node_old));
             node_new = getNodeByOsmId(nodes, id);
             double dist = Haversine::getDistance(node_new.node, node_old.node);
-           if (dist >= 1000){
+           if (dist >= 5){
                tableTmp.oldID = -1;
                node_old.id = id_new;
                tableTmp.newID = id_new++;
@@ -492,8 +492,8 @@ OsmParser::OSM_NODE OsmParser::getInterpolatedNodes(OSM_NODE node1, OSM_NODE nod
 
     //  std::vector<OSM_NODE> new_nodes;
     OSM_NODE new_node;
-    new_node.latitude = (node1.latitude - node2.latitude)/2 + node1.latitude;
-    new_node.longitude = (node1.longitude - node2.longitude)/2 + node1.longitude;
+    new_node.latitude = (node1.latitude + node2.latitude)/2;
+    new_node.longitude = (node1.longitude + node2.longitude)/2;
 
     //new_nodes.push_back(new_node);
     return new_node;
