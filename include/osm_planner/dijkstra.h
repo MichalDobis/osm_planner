@@ -24,7 +24,7 @@ class Dijkstra{
 public:
 
     Dijkstra();
-    std::vector<int> findShortestPath(std::vector <std::vector<double> > graph, int src, int target);
+    std::vector<int> findShortestPath(std::vector <std::vector<float> > graph, int src, int target);
     std::vector<int> getSolution();
 
 private:
@@ -32,8 +32,8 @@ private:
     std::vector<int> path;      // The shortest path - initialize in function getShortestPath()
     int source;                 //start point
 
-    int minDistance(std::vector<double> dist, bool sptSet[]);
-    std::vector<int> getSolution(std::vector<int> parent, std::vector<double> dist, int target);
+    int minDistance(std::vector<float> dist, bool sptSet[]);
+    std::vector<int> getSolution(std::vector<int> parent, std::vector<float> dist, int target);
     void printPath(std::vector<int> parent, int j);
 };
 

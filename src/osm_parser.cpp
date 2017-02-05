@@ -228,7 +228,7 @@ void OsmParser::deleteEdgeOnGraph(int nodeID_1, int nodeID_2){
 
 //todo - mozno by bolo lepsie, aby tato funkcia robila funkciu createNerwork() a pole by bolo globalne len v classe Dijkstra
 //getter for dijkstra algorithm
-std::vector< std::vector<double> > OsmParser::getGraphOfVertex(){
+std::vector< std::vector<float> > OsmParser::getGraphOfVertex(){
 
     return networkArray;
 }
@@ -366,7 +366,7 @@ void OsmParser::createMarkers(){
     }
     //------------------------------------------
 
-        ways.clear();
+         ways.clear();
         TiXmlElement* wayElement = hRootWay->Element();
 
         OSM_WAY wayTmp;
@@ -565,6 +565,8 @@ std::vector<OsmParser::OSM_NODE> OsmParser::getInterpolatedNodes(OSM_NODE node1,
             }
 
         }
+        interpolated_nodes.clear();
+        table.clear();
     }
 
 

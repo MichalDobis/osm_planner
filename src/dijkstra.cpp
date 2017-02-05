@@ -14,12 +14,12 @@ Dijkstra::Dijkstra(){
 //    this->graph = graph;
 }*/
 
-std::vector<int> Dijkstra::findShortestPath(std::vector <std::vector<double> > graph, int src, int target){
+std::vector<int> Dijkstra::findShortestPath(std::vector <std::vector<float> > graph, int src, int target){
 
 
                                                 //graph - matrix representation of the graph
     std::vector <int> parent(graph.size());     // Parent array to store shortest path tree
-    std::vector <double> dist(graph.size());    // The output array. dist[i] will hold
+    std::vector <float> dist(graph.size());    // The output array. dist[i] will hold
                                                 // the shortest distance from src to i
 
     this->source = src;
@@ -74,7 +74,7 @@ std::vector<int> Dijkstra::findShortestPath(std::vector <std::vector<double> > g
 }
 
 
-int Dijkstra::minDistance(std::vector<double> dist, bool sptSet[])
+int Dijkstra::minDistance(std::vector<float> dist, bool sptSet[])
 {
     // Initialize min value
     int min = 1000.0, min_index; //INT_MAX
@@ -105,7 +105,7 @@ void Dijkstra::printPath(std::vector<int> parent, int j)
 // A utility function to print the constructed distance
 // array
 
-std::vector<int> Dijkstra::getSolution(std::vector<int> parent, std::vector<double> dist,  int target) {
+std::vector<int> Dijkstra::getSolution(std::vector<int> parent, std::vector<float> dist,  int target) {
 
     path.clear();
 

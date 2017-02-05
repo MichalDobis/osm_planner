@@ -52,7 +52,7 @@ public:
     void deleteEdgeOnGraph(int nodeID_1, int nodeID_2);
 
     //GETTERS
-    std::vector< std::vector<double> > getGraphOfVertex(); //for dijkstra algorithm
+    std::vector< std::vector<float> > getGraphOfVertex(); //for dijkstra algorithm
     int getNearestPoint(double lat, double lon); //return OSM node ID
     int getNearestPointXY(double point_x, double point_y); //return OSM node ID
     OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
@@ -100,7 +100,7 @@ private:
     std::vector <OSM_NODE> nodes;
     std::vector <OSM_NODE_WITH_ID> interpolated_nodes;
     std::vector <TRANSLATE_TABLE> table;
-    std::vector <std::vector <double> > networkArray;
+    std::vector <std::vector <float> > networkArray;
 
     //start point - must be set and than you can publishing paths
     OSM_NODE startPoint;
