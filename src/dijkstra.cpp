@@ -6,27 +6,21 @@
 // Funtion that implements Dijkstra's single source shortest path
 // algorithm for a graph represented using adjacency matrix
 // representation
-Dijkstra::Dijkstra(std::vector <std::vector<double> > graph):
-
-        parent(graph.size()),    // Parent array to store shortest path tree
-        dist(graph.size())      // The output array. dist[i] will hold
-                                // the shortest distance from src to i
-
-{
-
-    this->graph = graph;
-
+Dijkstra::Dijkstra(){
 }
 
-void Dijkstra::setGraph(std::vector< std::vector<double> > graph){
+/*void Dijkstra::setGraph(std::vector< std::vector<double> > graph){
 
-    this->graph = graph;
-}
+//    this->graph = graph;
+}*/
 
-std::vector<int> Dijkstra::findShortestPath(int src, int target){
+std::vector<int> Dijkstra::findShortestPath(std::vector <std::vector<double> > graph, int src, int target){
 
-    parent.resize(graph.size());
-    dist.resize(graph.size());
+
+                                                //graph - matrix representation of the graph
+    std::vector <int> parent(graph.size());     // Parent array to store shortest path tree
+    std::vector <double> dist(graph.size());    // The output array. dist[i] will hold
+                                                // the shortest distance from src to i
 
     this->source = src;
     // sptSet[i] will true if vertex i is included / in shortest
@@ -75,7 +69,7 @@ std::vector<int> Dijkstra::findShortestPath(int src, int target){
 
     // print the constructed distance array
     //printf("\ngetting solution\n");
-    return getSolution(target);
+    return getSolution(parent, dist, target);
     //printSolution(dist, parent);
 }
 
@@ -111,7 +105,7 @@ void Dijkstra::printPath(std::vector<int> parent, int j)
 // A utility function to print the constructed distance
 // array
 
-std::vector<int> Dijkstra::getSolution(int target) {
+std::vector<int> Dijkstra::getSolution(std::vector<int> parent, std::vector<double> dist,  int target) {
 
     path.clear();
 
@@ -125,6 +119,11 @@ std::vector<int> Dijkstra::getSolution(int target) {
   //  }
 
     printPath(parent, target);
+
+    return path;
+}
+
+std::vector<int> Dijkstra::getSolution() {
 
     return path;
 }

@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<launch>
+
+  <include file="$(find osm_planner)/launch/planner.launch" ns="osm_planner">
+    <!--Defining this arg is necessary to change file path -->
+    <arg name="filepath" default="$(find osm_planner)/osm_example/sad_janka_krala.osm"/>
+  </include>
+
+  <!--RVIZ for drawing routes-->
+  <param name="visualization" value="true"/> <!--do not use namespace for param visualization-->
+  <!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find osm_planner)/rviz/routes.rviz" ns="osm_planner" required="true"/-->
+
+  <!--Simulation of navigation-->
+  <node name="navigation_example" pkg="osm_planner" type="navigation_example" ns="osm_planner" output="screen"/>
+
+  <!--Geographics coordinates - start and target position -->
+  <rosparam file="$(find osm_planner)/test/test_sad_janka_krala.yaml" command="load"/>
+  <!--rosparam file="$(find osm_planner)/test/test_botanicka.yaml" command="load"/-->
+
+
+
+</launch>

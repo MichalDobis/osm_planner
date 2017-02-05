@@ -22,7 +22,7 @@ public:
 
     OsmPlanner(std::string file) :
             osm(file),
-            dijkstra(osm.getGraphOfVertex()), targetID(100), sourceID(130), initialized(false)
+            dijkstra(), targetID(100), sourceID(130), initialized(false)
     {
 
         //init ros topics and services
@@ -83,7 +83,7 @@ private:
         ros::Time start_time = ros::Time::now();
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
         ROS_WARN("getting target ID %d. Planning trajectory...", targetID);
-        osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
+        osm.publishPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID), target_latitude, target_longitude);
         ROS_INFO("Plan time %f ",(ros::Time::now() - start_time).toSec());
 
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
@@ -95,7 +95,7 @@ private:
     bool cancelPoint(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res){
 
         //get current shortest path - vector of osm nodes IDs
-       std::vector <int> path = dijkstra.getSolution(targetID);
+       std::vector <int> path = dijkstra.getSolution();
 
         //if index is greather then array size
         if (req.pointID >= path.size()){
@@ -114,8 +114,8 @@ private:
 
         //replanning shorest path
         sourceID = path[req.pointID];   //return back to last position
-        dijkstra.setGraph(osm.getGraphOfVertex());
-        osm.publishPath(dijkstra.findShortestPath(sourceID, targetID), target_latitude, target_longitude);
+       // dijkstra.setGraph(osm.getGraphOfVertex());
+        osm.publishPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID), target_latitude, target_longitude);
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
         res.success = true;
         return true;

@@ -23,21 +23,17 @@
 class Dijkstra{
 public:
 
-    Dijkstra(std::vector <std::vector<double> > graph);
-    std::vector<int> findShortestPath(int src, int target);
-    std::vector<int> getSolution(int target);
-    void setGraph(std::vector< std::vector<double> > graph);
+    Dijkstra();
+    std::vector<int> findShortestPath(std::vector <std::vector<double> > graph, int src, int target);
+    std::vector<int> getSolution();
 
 private:
 
-    std::vector <std::vector<double> > graph; //matrix representation of the graph
-    std::vector<int> parent;    // Parent array to store shortest path tree
-    std::vector<double> dist;   // The output array. dist[i] will hold
-                                // the shortest distance from src to i
-    std::vector<int> path;      // The shortest path - inicialize in function getShortestPath()
+    std::vector<int> path;      // The shortest path - initialize in function getShortestPath()
     int source;                 //start point
 
     int minDistance(std::vector<double> dist, bool sptSet[]);
+    std::vector<int> getSolution(std::vector<int> parent, std::vector<double> dist, int target);
     void printPath(std::vector<int> parent, int j);
 };
 
