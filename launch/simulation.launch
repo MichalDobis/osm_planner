@@ -3,7 +3,7 @@
 
   <include file="$(find osm_planner)/launch/planner.launch" ns="osm_planner">
     <!--Defining this arg is necessary to change file path -->
-    <arg name="filepath" default="$(find osm_planner)/osm_example/sad_janka_krala.osm"/>
+    <arg name="filepath" default="$(find osm_planner)/osm_example/botanicka.osm"/>
   </include>
 
   <!--RVIZ for drawing routes-->
@@ -14,7 +14,7 @@
   <node name="navigation_example" pkg="osm_planner" type="navigation_example" ns="osm_planner" output="screen"/>
 
   <!--Geographics coordinates - start and target position -->
-  <rosparam file="$(find osm_planner)/test/test_sad_janka_krala.yaml" command="load"/>
+  <rosparam file="$(find osm_planner)/test/test_botanicka.yaml" command="load"/>
   <!--rosparam file="$(find osm_planner)/test/test_botanicka.yaml" command="load"/-->
 
 

@@ -5,7 +5,7 @@
 
 #include <osm_planner/osm_parser.h>
 
-OsmParser::OsmParser(std::string xml){
+OsmParser::OsmParser(std::string xml): xml(xml){
 
         ros::NodeHandle n;
 
@@ -29,47 +29,48 @@ OsmParser::OsmParser(std::string xml){
             refused_path_pub = n.advertise<nav_msgs::Path>("/refused_path", 10);
         }
 
-    ros::Time start_time = ros::Time::now();
-        TiXmlDocument doc(xml);
-        TiXmlNode* osm;
-        TiXmlNode* node;
-        TiXmlNode* way;
-
-        TiXmlHandle hRootNode(0);
-        TiXmlHandle hRootWay(0);
-        TiXmlHandle hRootTag(0);
-
-        bool loadOkay = doc.LoadFile();
-        if (loadOkay)
-        {
-            ROS_INFO("loaded map: %s", xml.c_str());
-        }
-        else
-        {
-            ROS_ERROR("Failed to load file %s", xml.c_str());
-            throw std::runtime_error("Failed to load xml");
-        }
-
-        osm = doc.FirstChildElement();
-        node = osm->FirstChild("node");
-        way = osm->FirstChild("way");
-        TiXmlElement* nodeElement = node->ToElement();
-        TiXmlElement* wayElement = way->ToElement();
-
-        hRootNode=TiXmlHandle(nodeElement);
-        hRootWay=TiXmlHandle(wayElement);
-
-
-    createWays(&hRootWay, &hRootNode,"highway", "footway");
-    createNodes(&hRootNode);
-    createNetwork(10);
-
-    ROS_INFO("Parsing time %f. Number of nodes %d ",(ros::Time::now() - start_time).toSec(), nodes.size());
-
     createMarkers();
     }
 
         /**PUBLISHING FUNCTIONS**/
+
+void OsmParser::parse() {
+            ros::Time start_time = ros::Time::now();
+            TiXmlDocument doc(xml);
+            TiXmlNode* osm;
+            TiXmlNode* node;
+            TiXmlNode* way;
+
+            TiXmlHandle hRootNode(0);
+            TiXmlHandle hRootWay(0);
+            TiXmlHandle hRootTag(0);
+
+            bool loadOkay = doc.LoadFile();
+            if (loadOkay)
+            {
+                ROS_INFO("OSM planner: loaded map: %s", xml.c_str());
+            }
+            else
+            {
+                ROS_ERROR("OSM planner: Failed to load file %s", xml.c_str());
+                throw std::runtime_error("Failed to load xml");
+            }
+
+            osm = doc.FirstChildElement();
+            node = osm->FirstChild("node");
+            way = osm->FirstChild("way");
+            TiXmlElement* nodeElement = node->ToElement();
+            TiXmlElement* wayElement = way->ToElement();
+
+            hRootNode=TiXmlHandle(nodeElement);
+            hRootWay=TiXmlHandle(wayElement);
+
+            createWays(&hRootWay, &hRootNode,"highway", "footway");
+            createNodes(&hRootNode);
+            createNetwork();
+            ROS_INFO("OSM planner: Parsing time %f. Number of nodes %d ",(ros::Time::now() - start_time).toSec(), nodes.size());
+
+        }
 
 void OsmParser::publishPoint(double latitude, double longitude, int marker_type){
 
@@ -86,7 +87,7 @@ void OsmParser::publishPoint(double latitude, double longitude, int marker_type)
 
     switch (marker_type){
          case CURRENT_POSITION_MARKER:
-          //  position_marker.points.clear();
+            position_marker.points.clear();
             position_marker.points.push_back(point);
             position_marker_pub.publish(position_marker);
             break;
@@ -96,6 +97,26 @@ void OsmParser::publishPoint(double latitude, double longitude, int marker_type)
             target_marker_pub.publish(target_marker);
             break;
      }
+}
+void OsmParser::publishPoint(geometry_msgs::Point point, int marker_type){
+
+    if (!visualization)
+        return;
+
+    point.z = 0;
+
+    switch (marker_type){
+        case CURRENT_POSITION_MARKER:
+            position_marker.points.clear();
+            position_marker.points.push_back(point);
+            position_marker_pub.publish(position_marker);
+            break;
+        case TARGET_POSITION_MARKER:
+            target_marker.points.clear();
+            target_marker.points.push_back(point);
+            target_marker_pub.publish(target_marker);
+            break;
+    }
 }
 
 
@@ -119,7 +140,7 @@ void OsmParser::publishPoint(int pointID, int marker_type) {
             position_marker_pub.publish(position_marker);
             break;
         case TARGET_POSITION_MARKER:
-           // target_marker.points.clear();
+            target_marker.points.clear();
             target_marker.points.push_back(point);
             target_marker_pub.publish(target_marker);
             break;
@@ -199,8 +220,6 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
 
     for (int i = 0; i < nodesInPath.size(); i++) {
 
-        ROS_DEBUG("shortest path: node id %d", nodesInPath[i]);
-
         pose.pose.position.x = Haversine::getCoordinateX(startPoint, nodes[nodesInPath[i]]);
         pose.pose.position.y = Haversine::getCoordinateY(startPoint, nodes[nodesInPath[i]]);
         pose.header.seq = i;
@@ -216,7 +235,6 @@ void OsmParser::publishPath(std::vector<int> nodesInPath, double target_lat, dou
 
 }
 
-//todo spravit aj obnovu bodov
 void OsmParser::deleteEdgeOnGraph(int nodeID_1, int nodeID_2){
 
     networkArray[nodeID_1][nodeID_2] = 0;
@@ -226,7 +244,6 @@ void OsmParser::deleteEdgeOnGraph(int nodeID_1, int nodeID_2){
 
         /* GETTERS */
 
-//todo - mozno by bolo lepsie, aby tato funkcia robila funkciu createNerwork() a pole by bolo globalne len v classe Dijkstra
 //getter for dijkstra algorithm - getting only pointer for spare memory
 std::vector< std::vector<float> > * OsmParser::getGraphOfVertex(){
 
@@ -290,6 +307,13 @@ void OsmParser::setStartPoint(double latitude, double longitude){
     this->startPoint.latitude = latitude;
     this->startPoint.longitude = longitude;
 }
+
+void OsmParser::setNewMap(std::string xml){
+
+    this->xml = xml;
+    parse();
+}
+
 
 
 //private functions
@@ -479,7 +503,7 @@ OsmParser::OSM_NODE_WITH_ID OsmParser::getNodeByOsmId(std::vector<OSM_NODE_WITH_
         if (nodes[i].id == id)
             return nodes[i];
     }
-    ROS_ERROR("nenaslo ziadnu nodu - toto by sa nemalo stat");
+    ROS_ERROR("OSM planner: nenaslo ziadnu nodu - toto by sa nemalo stat");
     return nodes[0];
 }
 
@@ -539,13 +563,12 @@ std::vector<OsmParser::OSM_NODE> OsmParser::getInterpolatedNodes(OSM_NODE node1,
     }
 
     //creating graph for dijkstra algorithm
-    void OsmParser::createNetwork(double interpolate_distance){
+    void OsmParser::createNetwork(){
 
         networkArray.resize(nodes.size());
-        //ROS_ERROR("size %d ", networkArray.size());
+
         for (int i = 0; i < networkArray.size(); i++){
             networkArray[i].resize(nodes.size());
-            //  ROS_WARN("size %d ", networkArray[i].size());
         }
 
         double distance = 0;
@@ -558,7 +581,7 @@ std::vector<OsmParser::OSM_NODE> OsmParser::getInterpolatedNodes(OSM_NODE node1,
                 distance = Haversine::getDistance(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j + 1]]);
                 //
                 if (networkArray[ways[i].nodesId[j]] [ways[i].nodesId[j + 1]] != 0)
-                    ROS_ERROR("pozicia [%d, %d] je obsadena - toto by nemalo nastat",ways[i].nodesId[j], ways[i].nodesId[j + 1]);
+                    ROS_ERROR("OSM planner: pozicia [%d, %d] je obsadena - toto by nemalo nastat",ways[i].nodesId[j], ways[i].nodesId[j + 1]);
                 networkArray[ways[i].nodesId[j]] [ways[i].nodesId[j + 1]] = distance;
                 networkArray[ways[i].nodesId[j + 1]] [ways[i].nodesId[j]] = distance;
 

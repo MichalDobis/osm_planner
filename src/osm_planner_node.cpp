@@ -45,6 +45,7 @@ public:
         cancel_point_service = n.advertiseService("cancel_point", &OsmPlanner::cancelPoint, this);
         init_service = n.advertiseService("init", &OsmPlanner::init, this);
 
+        ROS_WARN("OSM planner: Waiting for init...");
     }
 private:
 
@@ -77,14 +78,18 @@ private:
 
     bool replanning(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
+        if (!initialized) {
+            res.success = false;
+            return true;
+        }
         target_latitude = req.target.latitude;
         target_longitude = req.target.longitude;
 
         ros::Time start_time = ros::Time::now();
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
-        ROS_WARN("getting target ID %d. Planning trajectory...", targetID);
+        ROS_WARN("OSM planner: Planning trajectory...");
         osm.publishPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID), target_latitude, target_longitude);
-        ROS_INFO("Plan time %f ",(ros::Time::now() - start_time).toSec());
+        ROS_INFO("OSM planner: Plan time %f ",(ros::Time::now() - start_time).toSec());
 
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
         res.success = true;
@@ -93,6 +98,11 @@ private:
     }
 
     bool cancelPoint(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res){
+
+        if (!initialized) {
+            res.success = false;
+            return true;
+        }
 
         //get current shortest path - vector of osm nodes IDs
        std::vector <int> path = dijkstra.getSolution();
@@ -114,7 +124,7 @@ private:
 
         //replanning shorest path
         sourceID = path[req.pointID];   //return back to last position
-       // dijkstra.setGraph(osm.getGraphOfVertex());
+
         osm.publishPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID), target_latitude, target_longitude);
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
         res.success = true;
@@ -143,22 +153,20 @@ private:
         double y = msg->pose.pose.position.y;
 
         sourceID = osm.getNearestPointXY(x, y);
-        ROS_INFO("change position ID %d", sourceID);
 
-        osm.publishPoint(sourceID, OsmParser::CURRENT_POSITION_MARKER);
+        osm.publishPoint(msg->pose.pose.position, OsmParser::CURRENT_POSITION_MARKER);
     }
 
     void initMap(double lat, double lon){
 
+        osm.parse();
         osm.setStartPoint(lat, lon);
         sourceID = osm.getNearestPoint(lat,lon);
         osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
-        ROS_INFO("source ID %d", sourceID);
-
         //draw paths network
         osm.publishRouteNetwork();
-
         initialized = true;
+        ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
     }
 
 };

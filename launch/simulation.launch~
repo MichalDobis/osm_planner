@@ -8,7 +8,7 @@
 
   <!--RVIZ for drawing routes-->
   <param name="visualization" value="true"/> <!--do not use namespace for param visualization-->
-  <!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find osm_planner)/rviz/routes.rviz" ns="osm_planner" required="true"/-->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find osm_planner)/rviz/routes.rviz" ns="osm_planner" required="true"/>
 
   <!--Simulation of navigation-->
   <node name="navigation_example" pkg="osm_planner" type="navigation_example" ns="osm_planner" output="screen"/>

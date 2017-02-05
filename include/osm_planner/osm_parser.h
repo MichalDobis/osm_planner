@@ -41,8 +41,12 @@ public:
 
     OsmParser(std::string xml);
 
+    //start parsing
+    void parse();
+
     //publishing functions
     void publishPoint(int pointID, int marker_type);
+    void publishPoint(geometry_msgs::Point point, int marker_type);
     void publishPoint(double latitude, double longitude, int marker_type);
     void publishRouteNetwork();
     void publishRefusedPath(std::vector<int> nodesInPath);
@@ -56,7 +60,7 @@ public:
     int getNearestPoint(double lat, double lon); //return OSM node ID
     int getNearestPointXY(double point_x, double point_y); //return OSM node ID
     OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
-
+    void setNewMap(std::string xml);
     //SETTERS
     void setStartPoint(double latitude, double longitude); //set the zero point in cartezian coordinates
 
@@ -79,6 +83,9 @@ public:
     };
 
 private:
+
+    //map source
+    std::string xml;
 
     //publishers
     ros::Publisher position_marker_pub;
@@ -109,7 +116,7 @@ private:
 
     void createWays(TiXmlHandle* hRootWay, TiXmlHandle *hRootNode, std::string osm_key, std::string osm_value);
     void createNodes(TiXmlHandle *hRootNode);
-    void createNetwork(double interpolate_distance);
+    void createNetwork();
     void getNodesInWay(TiXmlElement* wayElement, OSM_WAY *way, std::vector<OSM_NODE_WITH_ID> nodes);
     bool translateID(int id, int *ret_value);
 

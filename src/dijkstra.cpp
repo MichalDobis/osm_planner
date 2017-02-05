@@ -9,13 +9,7 @@
 Dijkstra::Dijkstra(){
 }
 
-/*void Dijkstra::setGraph(std::vector< std::vector<double> > graph){
-
-//    this->graph = graph;
-}*/
-
 std::vector<int> Dijkstra::findShortestPath(std::vector <std::vector<float> > * graph, int src, int target){
-
 
                                                 //graph - matrix representation of the graph
     std::vector <int> parent((*graph).size());     // Parent array to store shortest path tree
@@ -68,9 +62,7 @@ std::vector<int> Dijkstra::findShortestPath(std::vector <std::vector<float> > * 
     }
 
     // print the constructed distance array
-    //printf("\ngetting solution\n");
     return getSolution(parent, dist, target);
-    //printSolution(dist, parent);
 }
 
 
@@ -94,9 +86,6 @@ void Dijkstra::printPath(std::vector<int> parent, int j)
     if (parent[j]==-1)
         return;
 
-   //printf("\nprintf path %d\n", j);
-
-    //todo zistit ako to tu funguje pada to tu
     printPath(parent, parent[j]);
 
     path.push_back(j);
@@ -114,9 +103,6 @@ std::vector<int> Dijkstra::getSolution(std::vector<int> parent, std::vector<floa
         return path;
     }
    path.push_back(source);
-
-    // for (int i = target; parent[i] != -1; i = parent[i]){
-  //  }
 
     printPath(parent, target);
 
