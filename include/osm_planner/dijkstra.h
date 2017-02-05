@@ -24,7 +24,7 @@ class Dijkstra{
 public:
 
     Dijkstra();
-    std::vector<int> findShortestPath(std::vector <std::vector<float> > graph, int src, int target);
+    std::vector<int> findShortestPath(std::vector <std::vector<float> > * graph, int src, int target);
     std::vector<int> getSolution();
 
 private:

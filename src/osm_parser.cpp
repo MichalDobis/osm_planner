@@ -227,10 +227,10 @@ void OsmParser::deleteEdgeOnGraph(int nodeID_1, int nodeID_2){
         /* GETTERS */
 
 //todo - mozno by bolo lepsie, aby tato funkcia robila funkciu createNerwork() a pole by bolo globalne len v classe Dijkstra
-//getter for dijkstra algorithm
-std::vector< std::vector<float> > OsmParser::getGraphOfVertex(){
+//getter for dijkstra algorithm - getting only pointer for spare memory
+std::vector< std::vector<float> > * OsmParser::getGraphOfVertex(){
 
-    return networkArray;
+    return &networkArray;
 }
 
 int OsmParser::getNearestPoint(double lat, double lon){

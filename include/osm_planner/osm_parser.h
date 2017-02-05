@@ -52,7 +52,7 @@ public:
     void deleteEdgeOnGraph(int nodeID_1, int nodeID_2);
 
     //GETTERS
-    std::vector< std::vector<float> > getGraphOfVertex(); //for dijkstra algorithm
+    std::vector< std::vector<float> > * getGraphOfVertex(); //for dijkstra algorithm
     int getNearestPoint(double lat, double lon); //return OSM node ID
     int getNearestPointXY(double point_x, double point_y); //return OSM node ID
     OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
