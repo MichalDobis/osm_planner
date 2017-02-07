@@ -41,7 +41,7 @@ public:
         } else throw std::runtime_error("Load bad parameter topic_position_type");
 
         //services
-        replanning_service = n.advertiseService("replanning", &OsmPlanner::replanning, this);
+        planning_service = n.advertiseService("planning", &OsmPlanner::planning, this);
         cancel_point_service = n.advertiseService("cancel_point", &OsmPlanner::cancelPoint, this);
         init_service = n.advertiseService("init", &OsmPlanner::init, this);
 
@@ -61,12 +61,10 @@ private:
     double target_latitude;
 
     /* Subscribers */
-    ros::Subscriber replanning_sub;
     ros::Subscriber position_sub;
-    ros::Subscriber change_source_sub;
 
     /* Services */
-    ros::ServiceServer replanning_service;
+    ros::ServiceServer planning_service;
     ros::ServiceServer init_service;
     ros::ServiceServer cancel_point_service;
 
@@ -76,7 +74,7 @@ private:
         return true;
     }
 
-    bool replanning(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
+    bool planning(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
         //Reference point is not initialize, please call init service
         if (!initialized) {
