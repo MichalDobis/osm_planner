@@ -78,38 +78,50 @@ private:
 
     bool replanning(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
+        //Reference point is not initialize, please call init service
         if (!initialized) {
-            res.success = false;
+            res.result = osm_planner::newTarget::Response::NOT_INIT;
             return true;
         }
         target_latitude = req.target.latitude;
         target_longitude = req.target.longitude;
 
         ros::Time start_time = ros::Time::now();
+
         targetID = osm.getNearestPoint(target_latitude, target_longitude);
+        osm.publishPoint(target_latitude, target_longitude, OsmParser::TARGET_POSITION_MARKER);
+
+        //checking distance to the nearest point
+        double dist = checkDistance(targetID, target_latitude, target_longitude);
+        if (dist > 1.0) {
+            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
+
+            res.result = osm_planner::newTarget::Response::TARGET_IS_OUT_OF_WAY;
+        } else res.result = res.result = osm_planner::newTarget::Response::PLAN_OK;
+
         ROS_WARN("OSM planner: Planning trajectory...");
         osm.publishPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID), target_latitude, target_longitude);
         ROS_INFO("OSM planner: Plan time %f ",(ros::Time::now() - start_time).toSec());
 
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
-        res.success = true;
 
         return true;
     }
 
     bool cancelPoint(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res){
 
+        //Reference point is not initialize, please call init service
         if (!initialized) {
-            res.success = false;
+            res.result = osm_planner::cancelledPoint::Response::NOT_INIT;
             return true;
         }
 
         //get current shortest path - vector of osm nodes IDs
        std::vector <int> path = dijkstra.getSolution();
 
-        //if index is greather then array size
+        //if index is greater than array size
         if (req.pointID >= path.size()){
-            res.success = false;
+            res.result = osm_planner::cancelledPoint::Response::BAD_INDEX;
             return true;
         }
 
@@ -124,10 +136,10 @@ private:
 
         //replanning shorest path
         sourceID = path[req.pointID];   //return back to last position
-
         osm.publishPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID), target_latitude, target_longitude);
+
+        res.result = osm_planner::cancelledPoint::Response::PLAN_OK;
         //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
-        res.success = true;
         return true;
     }
 
@@ -140,20 +152,25 @@ private:
         double lat = msg->latitude;
         double lon = msg->longitude;
 
-        osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
         sourceID = osm.getNearestPoint(lat, lon);
+        osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
+
+        //checking distance to the nearest point
+        double dist = checkDistance(sourceID, lat,lon);
+        if (dist > 1.0)
+            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
+
     }
 
     void odometryCallback(const nav_msgs::Odometry::ConstPtr& msg) {
 
-        if (!initialized)
+        if (!initialized) {
             return;
-
+        }
         double x = msg->pose.pose.position.x;
         double y = msg->pose.pose.position.y;
 
         sourceID = osm.getNearestPointXY(x, y);
-
         osm.publishPoint(msg->pose.pose.position, OsmParser::CURRENT_POSITION_MARKER);
     }
 
@@ -162,11 +179,25 @@ private:
         osm.parse();
         osm.setStartPoint(lat, lon);
         sourceID = osm.getNearestPoint(lat,lon);
+        //checking distance to the nearest point
+        double dist = checkDistance(sourceID, lat,lon);
+        if (dist > 1.0)
+            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
+
         osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
         //draw paths network
         osm.publishRouteNetwork();
         initialized = true;
         ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
+    }
+
+    double checkDistance(int node_id, double lat, double lon){
+
+        OsmParser::OSM_NODE node1 = osm.getNodeByID(node_id);
+        OsmParser::OSM_NODE node2;
+        node2.latitude = lat;
+        node2.longitude =lon;
+        return OsmParser::Haversine::getDistance(node1, node2);
     }
 
 };

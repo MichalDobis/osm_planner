@@ -628,6 +628,7 @@ double OsmParser::Haversine::getDistance(OsmParser::OSM_NODE node1, OsmParser::O
     return  R * c ;
 }
 
+
 double OsmParser::Haversine::getCoordinateX(double lon1, double lon2, double lat1, double lat2){
 
     double dLon = lon2 * DEG2RAD - lon1 * DEG2RAD;

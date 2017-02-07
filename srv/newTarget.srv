@@ -1,3 +1,7 @@
 sensor_msgs/NavSatFix target
 ---
-bool success
+uint8 PLAN_OK = 0
+uint8 TARGET_IS_OUT_OF_WAY = 1
+uint8 PLAN_FAILED = 2
+uint8 NOT_INIT = 3
+uint8 result
