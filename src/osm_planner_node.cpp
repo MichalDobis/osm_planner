@@ -74,7 +74,7 @@ private:
         return true;
     }
 
-    bool planning(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
+    bool planning(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res) {
 
         //Reference point is not initialize, please call init service
         if (!initialized) {
@@ -98,11 +98,17 @@ private:
         } else res.result = res.result = osm_planner::newTarget::Response::PLAN_OK;
 
         ROS_WARN("OSM planner: Planning trajectory...");
-        osm.publishPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID), target_latitude, target_longitude);
-        ROS_INFO("OSM planner: Plan time %f ",(ros::Time::now() - start_time).toSec());
+        try {
+            osm.publishPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID), target_latitude,
+                            target_longitude);
+            ROS_INFO("OSM planner: Plan time %f ", (ros::Time::now() - start_time).toSec());
 
-        //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
-
+        } catch (dijkstra_exception &e) {
+            if (e.get_err_id() == dijkstra_exception::NO_PATH_FOUND) {
+                ROS_ERROR("OSM planner: Planning failed");
+            } else ROS_ERROR("OSM planner: undefined error");
+            res.result = osm_planner::newTarget::Response::PLAN_FAILED;
+        }
         return true;
     }
 
@@ -132,12 +138,18 @@ private:
         //delete edge between two osm nodes
         osm.deleteEdgeOnGraph(path[req.pointID], path[req.pointID + 1]);
 
-        //replanning shorest path
+        //planning shorest path
         sourceID = path[req.pointID];   //return back to last position
-        osm.publishPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID), target_latitude, target_longitude);
+        try {
+            osm.publishPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID), target_latitude,
+                            target_longitude);
 
-        res.result = osm_planner::cancelledPoint::Response::PLAN_OK;
-        //todo dorobit v pripade, ze sa nenaplanuje, tak res.success = false
+        } catch (dijkstra_exception &e) {
+            if (e.get_err_id() == dijkstra_exception::NO_PATH_FOUND) {
+                ROS_ERROR("OSM planner: Planning failed");
+            } else ROS_ERROR("OSM planner: undefined error");
+            res.result = osm_planner::cancelledPoint::Response::PLAN_FAILED;
+        }
         return true;
     }
 

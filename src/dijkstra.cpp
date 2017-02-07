@@ -100,7 +100,7 @@ std::vector<int> Dijkstra::getSolution(std::vector<int> parent, std::vector<floa
 
 
     if (dist[target] >= 1000.0) {
-        return path;
+        throw dijkstra_exception(dijkstra_exception::NO_PATH_FOUND);
     }
    path.push_back(source);
 

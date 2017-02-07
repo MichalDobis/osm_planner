@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     ros::ServiceClient cancel_point = n.serviceClient<osm_planner::cancelledPoint>("cancel_point");
 
     ros::ServiceClient set_source = n.serviceClient<osm_planner::newTarget>("init");
-    ros::ServiceClient set_target = n.serviceClient<osm_planner::newTarget>("replanning");
+    ros::ServiceClient set_target = n.serviceClient<osm_planner::newTarget>("planning");
 
     osm_planner::newTarget gps_srv;
 
