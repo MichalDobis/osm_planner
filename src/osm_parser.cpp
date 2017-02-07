@@ -15,7 +15,6 @@ OsmParser::OsmParser(std::string xml): xml(xml){
         n.param<std::string>("map_frame", map_frame, "/map");
         n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path" );
         n.param<bool>("/visualization", visualization, false);
-        n.param<double>("interpolation_max_distance", interpolation_max_distance, 1000);
 
         //publishers
         shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
@@ -314,6 +313,9 @@ void OsmParser::setNewMap(std::string xml){
     parse();
 }
 
+void OsmParser::setInterpolationMaxDistance(double param){
+    this->interpolation_max_distance;
+}
 
 
 //private functions

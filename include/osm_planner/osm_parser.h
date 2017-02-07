@@ -60,9 +60,11 @@ public:
     int getNearestPoint(double lat, double lon); //return OSM node ID
     int getNearestPointXY(double point_x, double point_y); //return OSM node ID
     OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
-    void setNewMap(std::string xml);
+
     //SETTERS
     void setStartPoint(double latitude, double longitude); //set the zero point in cartezian coordinates
+    void setNewMap(std::string xml);
+    void setInterpolationMaxDistance(double param);
 
     //Embedded class for calculating distance and bearing
     class Haversine{

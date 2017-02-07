@@ -33,6 +33,9 @@ public:
         n.param<std::string>("topic_position_name", topic_name, "/position");
         n.param<int>("topic_position_type", topic_type, 1);
 
+        //for point interpolation
+        n.param<double>("interpolation_max_distance", interpolation_max_distance, 1000);
+
         //subscribers
         if (topic_type == GEOGRAPHICS_COORDINATES){
             position_sub = n.subscribe(topic_name, 1, &OsmPlanner::gpsCallback, this);
@@ -68,6 +71,8 @@ private:
     ros::ServiceServer init_service;
     ros::ServiceServer cancel_point_service;
 
+    double interpolation_max_distance;
+
     bool init(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
         initMap(req.target.latitude, req.target.longitude);
@@ -91,7 +96,7 @@ private:
 
         //checking distance to the nearest point
         double dist = checkDistance(targetID, target_latitude, target_longitude);
-        if (dist > 1.0) {
+        if (dist > interpolation_max_distance) {
             ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
 
             res.result = osm_planner::newTarget::Response::TARGET_IS_OUT_OF_WAY;
@@ -105,8 +110,8 @@ private:
 
         } catch (dijkstra_exception &e) {
             if (e.get_err_id() == dijkstra_exception::NO_PATH_FOUND) {
-                ROS_ERROR("OSM planner: Planning failed");
-            } else ROS_ERROR("OSM planner: undefined error");
+                ROS_ERROR("OSM planner: Planning failed... Try to call init service again");
+            } else ROS_ERROR("OSM planner: Undefined error");
             res.result = osm_planner::newTarget::Response::PLAN_FAILED;
         }
         return true;
@@ -167,7 +172,7 @@ private:
 
         //checking distance to the nearest point
         double dist = checkDistance(sourceID, lat,lon);
-        if (dist > 1.0)
+        if (dist > interpolation_max_distance)
             ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
 
     }
@@ -191,7 +196,7 @@ private:
         sourceID = osm.getNearestPoint(lat,lon);
         //checking distance to the nearest point
         double dist = checkDistance(sourceID, lat,lon);
-        if (dist > 1.0)
+        if (dist > interpolation_max_distance)
             ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
 
         osm.publishPoint(lat, lon, OsmParser::CURRENT_POSITION_MARKER);
