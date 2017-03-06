@@ -10,6 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
         std_msgs
         sensor_msgs
+        nav_core
+        pluginlib
 )
 
 find_package(TinyXML REQUIRED)
@@ -127,15 +129,21 @@ add_library(dijkstra
 add_library(parser
         src/osm_parser.cpp
         )
+add_library(osm_planner
+        src/osm_planner.cpp
+        )
 target_link_libraries(dijkstra
         ${catkin_LIBRARIES}
         )
 target_link_libraries(parser
         ${catkin_LIBRARIES}
         )
+target_link_libraries(osm_planner
+        ${catkin_LIBRARIES}
+        )
 
 add_executable(osm_planner_node src/osm_planner_node.cpp)
-target_link_libraries(osm_planner_node dijkstra parser ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
+target_link_libraries(osm_planner_node osm_planner parser dijkstra ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
 add_dependencies(osm_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(navigation_example src/navigation_example.cpp)
@@ -160,6 +168,7 @@ install(
         TARGETS
         dijkstra
         parser
+        osm_planner
         osm_planner_node
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -185,3 +194,8 @@ install(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+
+#PLUGINLIB_EXPORT_CLASS(osm::Planner, nav_core::BaseGlobalPlanner)
+install(FILES osm_planner_plugin.xml
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

@@ -22,43 +22,49 @@
 // value, from the set of vertices not yet included in shortest
 // path tree
 
-class dijkstra_exception: public std::exception
-{
-public:
-    const static int NO_PATH_FOUND = 1;
+namespace osm {
 
-    dijkstra_exception(int err_id){
-        this->err_id = err_id;
-    }
+    class dijkstra_exception : public std::exception {
+    public:
+        const static int NO_PATH_FOUND = 1;
 
-    virtual const char* what() const throw()
-    {
-        return "No path found";
-    }
-    int get_err_id(){
-        return err_id;
-    }
-private:
-    int err_id;
-};
+        dijkstra_exception(int err_id) {
+            this->err_id = err_id;
+        }
 
-class Dijkstra{
-public:
+        virtual const char *what() const throw() {
+            return "No path found";
+        }
 
-    Dijkstra();
-    std::vector<int> findShortestPath(std::vector <std::vector<float> > * graph, int src, int target);
-    std::vector<int> getSolution();
+        int get_err_id() {
+            return err_id;
+        }
 
-private:
+    private:
+        int err_id;
+    };
 
-    std::vector<int> path;      // The shortest path - initialize in function getShortestPath()
-    int source;                 //start point
+    class Dijkstra {
+    public:
 
-    int minDistance(std::vector<float> dist, bool sptSet[]);
-    std::vector<int> getSolution(std::vector<int> parent, std::vector<float> dist, int target);
-    void printPath(std::vector<int> parent, int j);
-};
+        Dijkstra();
 
+        std::vector<int> findShortestPath(std::vector<std::vector<float> > *graph, int src, int target);
 
+        std::vector<int> getSolution();
+
+    private:
+
+        std::vector<int> path;      // The shortest path - initialize in function getShortestPath()
+        int source;                 //start point
+
+        int minDistance(std::vector<float> dist, bool sptSet[]);
+
+        std::vector<int> getSolution(std::vector<int> parent, std::vector<float> dist, int target);
+
+        void printPath(std::vector<int> parent, int j);
+    };
+
+}
 
 #endif //PROJECT_DIJKSTRA_H

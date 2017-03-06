@@ -44,15 +44,17 @@
   <build_depend>roscpp</build_depend>
   <build_depend>tinyxml</build_depend>
   <build_depend>cmake_modules</build_depend>
+  <build_depend>nav_core</build_depend>
 
   <run_depend>message_runtime</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>tinyxml</run_depend>
+  <run_depend>nav_core</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-
+    <nav_core plugin="${prefix}/osm_planner_plugin.xml" />
   </export>
 </package>
