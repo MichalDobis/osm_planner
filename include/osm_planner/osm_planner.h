@@ -14,7 +14,7 @@
 #include <sensor_msgs/NavSatFix.h>
 
 
-namespace osm {
+namespace osm_planner {
 
     class Planner: public nav_core::BaseGlobalPlanner{
     public:

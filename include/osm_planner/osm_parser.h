@@ -13,7 +13,7 @@
 #include <tf/transform_datatypes.h>
 
 
-namespace osm {
+namespace osm_planner {
 
     class Parser {
     public:

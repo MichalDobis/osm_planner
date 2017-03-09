@@ -22,7 +22,7 @@
 // value, from the set of vertices not yet included in shortest
 // path tree
 
-namespace osm {
+namespace osm_planner {
 
     class dijkstra_exception : public std::exception {
     public:

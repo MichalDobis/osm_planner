@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
         sensor_msgs
         nav_core
         pluginlib
+        navfn
 )
 
 find_package(TinyXML REQUIRED)
@@ -123,31 +124,21 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(dijkstra
-        src/dijkstra.cpp
-        )
-add_library(parser
-        src/osm_parser.cpp
-        )
 add_library(osm_planner
         src/osm_planner.cpp
-        )
-target_link_libraries(dijkstra
-        ${catkin_LIBRARIES}
-        )
-target_link_libraries(parser
-        ${catkin_LIBRARIES}
+        src/osm_parser.cpp
+        src/dijkstra.cpp
         )
 target_link_libraries(osm_planner
         ${catkin_LIBRARIES}
         )
 
 add_executable(osm_planner_node src/osm_planner_node.cpp)
-target_link_libraries(osm_planner_node osm_planner parser dijkstra ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
-add_dependencies(osm_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(osm_planner_node osm_planner  ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
+add_dependencies(osm_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} osm_planner)
 
 add_executable(navigation_example src/navigation_example.cpp)
-target_link_libraries(navigation_example dijkstra parser ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
+target_link_libraries(navigation_example ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
 add_dependencies(navigation_example ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #############
 ## Install ##
@@ -166,10 +157,7 @@ add_dependencies(navigation_example ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 ## Mark executables and/or libraries for installation
 install(
         TARGETS
-        dijkstra
-        parser
         osm_planner
-        osm_planner_node
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})

@@ -4,7 +4,7 @@
 
 
 #include <osm_planner/osm_parser.h>
-namespace osm {
+namespace osm_planner {
 
 
     Parser::Parser() {
@@ -91,8 +91,8 @@ namespace osm {
         createWays(&hRootWay, &hRootNode, "highway", "footway");
         createNodes(&hRootNode);
         createNetwork();
-        ROS_INFO("OSM planner: Parsing time %f. Number of nodes %d ", (ros::Time::now() - start_time).toSec(),
-                 nodes.size());
+     //   ROS_INFO("OSM planner: Parsing time %f. Number of nodes %d ", (ros::Time::now() - start_time).toSec(),
+      //           nodes.size());
 
     }
 

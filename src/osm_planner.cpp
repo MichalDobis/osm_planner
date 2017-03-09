@@ -10,9 +10,9 @@
 #include <nav_msgs/Odometry.h>
 
 //register this planner as a BaseGlobalPlanner plugin
-PLUGINLIB_EXPORT_CLASS(osm::Planner, nav_core::BaseGlobalPlanner);
+PLUGINLIB_EXPORT_CLASS(osm_planner::Planner, nav_core::BaseGlobalPlanner);
 
-namespace osm {
+namespace osm_planner {
 
     Planner::Planner() :
             osm(), dijkstra(), targetID(100), sourceID(130), initialized(false) {
@@ -44,7 +44,7 @@ namespace osm {
         n.param<double>("interpolation_max_distance", interpolation_max_distance, 1000);
         osm.setInterpolationMaxDistance(interpolation_max_distance);
 
-        init_service = n.advertiseService("init", &Planner::initCallback, this);
+        init_service = n.advertiseService("init_map", &Planner::initCallback, this);
 
         ROS_WARN("OSM planner: Waiting for init position, please call init service...");
     }
@@ -83,7 +83,10 @@ namespace osm {
         plan.push_back(start);
         nav_msgs::Path *path;
         setPositionFromOdom(start.pose.position);
-        planning(goal, path);
+        int result = planning(goal, path);
+
+        if (result == osm_planner::newTarget::Response::NOT_INIT || result == osm_planner::newTarget::Response::PLAN_FAILED)
+            return false;
 
         for (int i=0; i< path->poses.size(); i++){
 

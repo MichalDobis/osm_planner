@@ -38,7 +38,7 @@ public:
     }
 private:
 
-    osm::Planner planner;
+    osm_planner::Planner planner;
 
     /* Subscribers */
     ros::Subscriber position_sub;

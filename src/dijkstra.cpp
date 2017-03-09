@@ -7,7 +7,7 @@
 // algorithm for a graph represented using adjacency matrix
 // representation
 
-namespace osm {
+namespace osm_planner {
 
 
     Dijkstra::Dijkstra() {
