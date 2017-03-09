@@ -11,15 +11,15 @@ namespace osm_planner {
 
         ros::NodeHandle n;
 
-        std::string topic_name;
+      //  std::string topic_name;
 
         //get the parameters
         n.param<std::string>("map_frame", map_frame, "/map");
-        n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path");
+      //  n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path");
         n.param<bool>("/visualization", visualization, false);
 
         //publishers
-        shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
+       // shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
 
         if (visualization) {
             //Publishers for visualization
@@ -37,15 +37,15 @@ namespace osm_planner {
 
         ros::NodeHandle n;
 
-        std::string topic_name;
+        //std::string topic_name;
 
         //get the parameters
         n.param<std::string>("map_frame", map_frame, "/map");
-        n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path");
+       // n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path");
         n.param<bool>("/visualization", visualization, false);
 
         //publishers
-        shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
+      //  shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
 
         if (visualization) {
             //Publishers for visualization
@@ -236,8 +236,26 @@ namespace osm_planner {
         refused_path_pub.publish(refused_path);
     }
 
-//publishing defined path with target geographic point
-    nav_msgs::Path *Parser::publishPath(std::vector<int> nodesInPath, double target_lat, double target_lon) {
+    void Parser::deleteEdgeOnGraph(int nodeID_1, int nodeID_2) {
+
+        networkArray[nodeID_1][nodeID_2] = 0;
+        networkArray[nodeID_2][nodeID_1] = 0;
+
+    }
+
+    /* GETTERS */
+
+//getter for dijkstra algorithm - getting only pointer for spare memory
+    std::vector<std::vector<float> > *Parser::getGraphOfVertex() {
+
+        return &networkArray;
+    }
+
+    //getting defined path
+    nav_msgs::Path Parser::getPath(std::vector<int> nodesInPath) {
+
+        //msgs for shortest path
+        nav_msgs::Path sh_path;
 
         sh_path.poses.clear();
         sh_path.header.frame_id = map_frame;
@@ -258,31 +276,10 @@ namespace osm_planner {
             sh_path.poses.push_back(pose);
         }
 
-        pose.pose.position.x = Haversine::getCoordinateX(startPoint.longitude, target_lon, startPoint.latitude,
-                                                         target_lat);
-        pose.pose.position.y = Haversine::getCoordinateY(startPoint.latitude, target_lat);
-        pose.header.seq = pose.header.seq + 1;
-        sh_path.poses.push_back(pose);
         sh_path.header.stamp = ros::Time::now();
-        shortest_path_pub.publish(sh_path);
-        return &sh_path;
-
+        return sh_path;
     }
 
-    void Parser::deleteEdgeOnGraph(int nodeID_1, int nodeID_2) {
-
-        networkArray[nodeID_1][nodeID_2] = 0;
-        networkArray[nodeID_2][nodeID_1] = 0;
-
-    }
-
-    /* GETTERS */
-
-//getter for dijkstra algorithm - getting only pointer for spare memory
-    std::vector<std::vector<float> > *Parser::getGraphOfVertex() {
-
-        return &networkArray;
-    }
 
     int Parser::getNearestPoint(double lat, double lon) {
 
@@ -319,6 +316,7 @@ namespace osm_planner {
             x = Haversine::getCoordinateX(startPoint, nodes[i]);
             y = Haversine::getCoordinateY(startPoint, nodes[i]);
 
+
             double distance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
 
             if (minDistance > distance) {
@@ -329,6 +327,9 @@ namespace osm_planner {
         return id;
     }
 
+    Parser::OSM_NODE Parser::getStartPoint() {
+        return startPoint;
+    }
 //return OSM NODE, which contains geographics coordinates
    Parser::OSM_NODE Parser::getNodeByID(int id) {
 

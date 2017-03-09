@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+  <master auto="start"/>
+
+    <include file="$(find osm_planner)/launch/planner_setup.launch">
+        <!--Defining this arg is necessary to change file path -->
+        <arg name="filepath" default="$(find osm_planner)/osm_example/botanicka.osm"/>
+    </include>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find osm_planner)/rviz/routes.rviz" required="true"/>
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+     <param name="base_global_planner" value="osm_planner/Planner"/>
+  </node>
+
+    <param name="robot_description" command="$(find xacro)/xacro '$(find mrvk_description)/urdf/robot.urdf.xacro' --inorder" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+
+</launch>

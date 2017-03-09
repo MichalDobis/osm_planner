@@ -59,8 +59,6 @@ namespace osm_planner {
 
         void publishRefusedPath(std::vector<int> nodesInPath);
 
-        nav_msgs::Path *publishPath(std::vector<int> nodesInPath, double target_lat, double target_lon);
-
         //deleting edge on the graph
         void deleteEdgeOnGraph(int nodeID_1, int nodeID_2);
 
@@ -69,6 +67,8 @@ namespace osm_planner {
         int getNearestPoint(double lat, double lon); //return OSM node ID
         int getNearestPointXY(double point_x, double point_y); //return OSM node ID
         OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
+        nav_msgs::Path getPath(std::vector<int> nodesInPath); //get the XY coordinates from vector of IDs
+        OSM_NODE getStartPoint();
 
         //SETTERS
         void setStartPoint(double latitude, double longitude); //set the zero point in cartezian coordinates
@@ -109,12 +109,10 @@ namespace osm_planner {
         ros::Publisher target_marker_pub;
         ros::Publisher path_pub;
         ros::Publisher refused_path_pub;
-        ros::Publisher shortest_path_pub;
+       // ros::Publisher shortest_path_pub;
 
         //visualization msgs
         visualization_msgs::Marker position_marker, target_marker;
-        //msgs for shortest path
-        nav_msgs::Path sh_path;
 
         std::string map_frame; //name of frame for msgs
         bool visualization; //enable or disable publishing markers and paths for rviz visualization

@@ -19,6 +19,12 @@ namespace osm_planner {
     class Planner: public nav_core::BaseGlobalPlanner{
     public:
 
+        typedef struct point{
+            int id;
+            Parser::OSM_NODE geoPoint;
+            geometry_msgs::PoseStamped cartesianPoint;
+        }POINT;
+
         const static int GEOGRAPHICS_COORDINATES = 1;
         const static int CARTEZIAN_COORDINATES = 2;
 
@@ -33,12 +39,13 @@ namespace osm_planner {
                       std::vector<geometry_msgs::PoseStamped>& plan
         );
 
-        //void initializeMap(std::string name, double lat, double lon);
+        int makePlan(double target_latitude, double target_longitude);
+
+    protected:
+
         void initializePos(double lat, double lon);
 
-        int planning(double target_latitude, double target_longitude, nav_msgs::Path *path);
-        int planning(const geometry_msgs::PoseStamped& goal, nav_msgs::Path *path);
-        int planning(int sourceID, int targetID, nav_msgs::Path *path);
+        int planning(int sourceID, int targetID);
         int cancelPoint(int pointID);
 
         void setPositionFromGPS(double lat, double lon);
@@ -49,24 +56,28 @@ namespace osm_planner {
         Parser osm;
         Dijkstra dijkstra;
 
-        int sourceID;
-        int targetID;
+        bool initialized_ros;
+        bool initialized_position;
 
-        bool initialized;
+        POINT source;
+        POINT target;
 
-        double target_longitude;
-        double target_latitude;
+        /*Publisher*/
+        ros::Publisher shortest_path_pub;
 
-        /* Subscribers */
-        ros::Subscriber position_sub;
+        //msgs for shortest path
+        nav_msgs::Path path;
 
         /* Services */
         ros::ServiceServer init_service;
+        ros::ServiceServer cancel_point_service;
 
         double interpolation_max_distance;
 
         bool initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
-        double checkDistance(int node_id, double lat, double lon);
+        bool cancelPointCallback(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res);
 
+        double checkDistance(int node_id, double lat, double lon);
+        double checkDistance(int node_id, geometry_msgs::Pose pose);
     };
 }

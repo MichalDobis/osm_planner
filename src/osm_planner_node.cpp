@@ -8,13 +8,13 @@
 #include <osm_planner/osm_planner.h>
 #include <nav_msgs/Odometry.h>
 
-class OsmPlannerNode{
+class OsmPlannerNode: osm_planner::Planner{
 public:
 
     const static int GEOGRAPHICS_COORDINATES = 1;
     const static int CARTEZIAN_COORDINATES = 2;
 
-    OsmPlannerNode(std::string file) : planner(){
+    OsmPlannerNode(std::string file) : osm_planner::Planner(){
 
         //init ros topics and services
         ros::NodeHandle n;
@@ -33,43 +33,31 @@ public:
 
         //services
         planning_service = n.advertiseService("planning", &OsmPlannerNode::planningCallback, this);
-        cancel_point_service = n.advertiseService("cancel_point", &OsmPlannerNode::cancelPointCallback, this);
-
     }
-private:
 
-    osm_planner::Planner planner;
+private:
 
     /* Subscribers */
     ros::Subscriber position_sub;
 
     /* Services */
     ros::ServiceServer planning_service;
-    ros::ServiceServer cancel_point_service;
 
 
     bool planningCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res) {
 
-        nav_msgs::Path *path;
-        res.result = planner.planning(req.target.latitude, req.target.longitude, path);
+        res.result = makePlan(req.target.latitude, req.target.longitude);
         return true;
     }
-
-    bool cancelPointCallback(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res){
-
-       res.result = planner.cancelPoint(req.pointID);
-        return true;
-    }
-
 
     void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
 
-       planner.setPositionFromGPS(msg->latitude, msg->longitude);
+       setPositionFromGPS(msg->latitude, msg->longitude);
     }
 
     void odometryCallback(const nav_msgs::Odometry::ConstPtr& msg) {
 
-      planner.setPositionFromOdom(msg->pose.pose.position);
+      setPositionFromOdom(msg->pose.pose.position);
     }
 
 };
