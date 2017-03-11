@@ -12,15 +12,14 @@
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
      <param name="base_global_planner" value="osm_planner/Planner"/>
  <param name="controller_frequency" value="10"/>
-    <rosparam file="$(find mrvk_2dnav)/config/costmap_common.yaml" command="load" ns="global_costmap" />
+    <!--rosparam file="$(find mrvk_2dnav)/config/costmap_common.yaml" command="load" ns="global_costmap" />
     <rosparam file="$(find mrvk_2dnav)/config/costmap_common.yaml" command="load" ns="local_costmap" />
     <rosparam file="$(find mrvk_2dnav)/config/local_costmap.yaml" command="load" />
     <rosparam file="$(find mrvk_2dnav)/config/global_costmap.yaml" command="load" />
-    <rosparam file="$(find mrvk_2dnav)/config/base_local_planner.yaml" command="load" />
+    <rosparam file="$(find mrvk_2dnav)/config/base_local_planner.yaml" command="load" /-->
     <!--remap from="odom" to="/mrvk/diff_drive_controller/odom"/-->
   </node>
 
-  <!--node name="navigation_example" pkg="osm_planner" type="navigation_example"/-->
   <include file="$(find mrvk_driver)/launch/mapping.launch" />
 
 

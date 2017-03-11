@@ -11,10 +11,7 @@
 class OsmPlannerNode: osm_planner::Planner{
 public:
 
-    const static int GEOGRAPHICS_COORDINATES = 1;
-    const static int CARTEZIAN_COORDINATES = 2;
-
-    OsmPlannerNode(std::string file) : osm_planner::Planner(){
+    OsmPlannerNode() : osm_planner::Planner(){
 
         //init ros topics and services
         ros::NodeHandle n;
@@ -25,26 +22,28 @@ public:
         n.param<int>("topic_position_type", topic_type, 1);
 
         //subscribers
-        if (topic_type == GEOGRAPHICS_COORDINATES){
-            position_sub = n.subscribe(topic_name, 1, &OsmPlannerNode::gpsCallback, this);
-        } else if (topic_type == CARTEZIAN_COORDINATES) {
-            position_sub = n.subscribe(topic_name, 1, &OsmPlannerNode::odometryCallback, this);
-        } else throw std::runtime_error("Load bad parameter topic_position_type");
+        gps_sub = n.subscribe(topic_name, 1, &OsmPlannerNode::gpsCallback, this);
+        odom_sub = n.subscribe(topic_name, 1, &OsmPlannerNode::odometryCallback, this);
 
         //services
-        planning_service = n.advertiseService("planning", &OsmPlannerNode::planningCallback, this);
+        plan_service = n.advertiseService("make_plan", &OsmPlannerNode::makePlanCallback, this);
+    }
+
+    void update(){
+        updatePose();
     }
 
 private:
 
     /* Subscribers */
-    ros::Subscriber position_sub;
+    ros::Subscriber gps_sub;
+    ros::Subscriber odom_sub;
 
     /* Services */
-    ros::ServiceServer planning_service;
+    ros::ServiceServer plan_service;
 
 
-    bool planningCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res) {
+    bool makePlanCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res) {
 
         res.result = makePlan(req.target.latitude, req.target.longitude);
         return true;
@@ -65,13 +64,16 @@ private:
 int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "test_osm");
-	ros::NodeHandle n;
 
-	std::string file = "skuska.osm";
-	n.getParam("filepath", file);
+    OsmPlannerNode osm_planner;
 
-    OsmPlannerNode osm_planner(file);
-    ros::spin();
+    ros::Rate rate(2);
+
+    while (ros::ok()) {
+
+        osm_planner.update();
+        ros::spinOnce();
+    }
 
 return 0;
 }

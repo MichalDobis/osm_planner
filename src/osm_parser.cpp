@@ -14,12 +14,10 @@ namespace osm_planner {
       //  std::string topic_name;
 
         //get the parameters
-        n.param<std::string>("map_frame", map_frame, "/map");
-      //  n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path");
+        n.param<std::string>("robot_base_frame", map_frame, "/map");
         n.param<bool>("/visualization", visualization, false);
 
         //publishers
-       // shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
 
         if (visualization) {
             //Publishers for visualization
@@ -41,7 +39,6 @@ namespace osm_planner {
 
         //get the parameters
         n.param<std::string>("map_frame", map_frame, "/map");
-       // n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path");
         n.param<bool>("/visualization", visualization, false);
 
         //publishers

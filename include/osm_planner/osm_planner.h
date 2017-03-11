@@ -6,6 +6,7 @@
 #include <std_msgs/Int32.h>
 #include <std_srvs/Empty.h>
 #include <geometry_msgs/Point.h>
+#include <tf/tf.h>
 
 //navigation plugin
 #include <costmap_2d/costmap_2d_ros.h>
@@ -25,9 +26,6 @@ namespace osm_planner {
             geometry_msgs::PoseStamped cartesianPoint;
         }POINT;
 
-        const static int GEOGRAPHICS_COORDINATES = 1;
-        const static int CARTEZIAN_COORDINATES = 2;
-
         Planner();
         void initialize();
 
@@ -43,13 +41,19 @@ namespace osm_planner {
 
     protected:
 
+        //Before start make plan, this function must be call
         void initializePos(double lat, double lon);
 
+        //make plan from source to target
         int planning(int sourceID, int targetID);
+
+        //deleted selected point id on the path
         int cancelPoint(int pointID);
 
-        void setPositionFromGPS(double lat, double lon);
-        void setPositionFromOdom(geometry_msgs::Point point);
+        //update pose
+        bool updatePose(); //from tf
+        void setPositionFromGPS(double lat, double lon);        //from gps
+        void setPositionFromOdom(geometry_msgs::Point point);  //from odom
 
     private:
 
@@ -62,6 +66,11 @@ namespace osm_planner {
         POINT source;
         POINT target;
 
+        //global ros parameters
+        bool use_tf;
+        std::string map_frame, base_link_frame;
+        double interpolation_max_distance;
+
         /*Publisher*/
         ros::Publisher shortest_path_pub;
 
@@ -72,8 +81,7 @@ namespace osm_planner {
         ros::ServiceServer init_service;
         ros::ServiceServer cancel_point_service;
 
-        double interpolation_max_distance;
-
+        //callbacks
         bool initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
         bool cancelPointCallback(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res);
 
