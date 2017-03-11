@@ -1,5 +1,0 @@
- <library path="lib/libosm_planner">
-  <class name="osm_planner/Planner" type="osm_planner::Planner" base_class_type="nav_core::BaseGlobalPlanner">
-    <description>This is a osm global planner plugin.</description>
-  </class>
- </library>

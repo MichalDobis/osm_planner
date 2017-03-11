@@ -6,11 +6,9 @@
  */
 
 #include <osm_planner/osm_planner.h>
-#include <pluginlib/class_list_macros.h>
 #include <nav_msgs/Odometry.h>
 
-//register this planner as a BaseGlobalPlanner plugin
-PLUGINLIB_EXPORT_CLASS(osm_planner::Planner, nav_core::BaseGlobalPlanner);
+
 
 namespace osm_planner {
 
@@ -24,20 +22,7 @@ namespace osm_planner {
         initialize();
     }
 
-    Planner::Planner(std::string name, costmap_2d::Costmap2DROS* costmap_ros) :
-            osm(), dijkstra(), initialized_position(false) {
-
-        initialized_ros = false;
-        initialize(name, costmap_ros);
-    }
-
-
     /*--------------------PUBLIC FUNCTIONS---------------------*/
-
-    void Planner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros){
-
-        initialize();
-    }
 
     void Planner::initialize(){
 
@@ -72,58 +57,6 @@ namespace osm_planner {
             initialized_ros = true;
             ROS_WARN("OSM planner: Waiting for init position, please call init service...");
         }
-    }
-
-    bool Planner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
-
-        if (!initialized_position) {
-            ROS_ERROR("OSM PLANNER: Reference point is not initialize, please call init service");
-            return false;
-        }
-
-        //set the start Pose
-        setPositionFromOdom(start.pose.position);
-
-        //set the nearest point as target and save new target point
-        target.id = osm.getNearestPointXY(goal.pose.position.x, goal.pose.position.y);
-        target.cartesianPoint.pose = goal.pose;
-
-        //draw target point
-        osm.publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER);
-
-        double dist = checkDistance(target.id, target.cartesianPoint.pose);
-        if (dist > interpolation_max_distance) {
-            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
-           // return osm_planner::newTarget::Response::TARGET_IS_OUT_OF_WAY;
-        }
-
-        plan.push_back(start);
-
-       ///start planning, the Path is obtaining in global variable nav_msgs::Path path
-        int result = planning(source.id, target.id);
-
-        //check the result of planning
-          if (result == osm_planner::newTarget::Response::NOT_INIT || result == osm_planner::newTarget::Response::PLAN_FAILED)
-            return false;
-
-        for (int i=0; i< path.poses.size(); i++){
-
-            geometry_msgs::PoseStamped new_goal = goal;
-            tf::Quaternion goal_quat = tf::createQuaternionFromYaw(1.54);
-
-            new_goal.pose.position.x = path.poses[i].pose.position.x;
-            new_goal.pose.position.y = path.poses[i].pose.position.y;
-            new_goal.pose.orientation = path.poses[i].pose.orientation;
-
-            plan.push_back(new_goal);
-        }
-
-        //add end (target) point
-        path.poses.push_back(goal);
-        shortest_path_pub.publish(path);
-        plan.push_back(goal);
-
-        return true;
     }
 
     int Planner::makePlan(double target_latitude, double target_longitude) {

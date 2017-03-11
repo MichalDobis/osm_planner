@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <launch>
 
-  <include file="$(find osm_planner)/launch/demo.launch" ns="osm_planner">
+  <include file="$(find osm_planner)/launch/planner.launch" ns="osm_planner">
     <!--Defining this arg is necessary to change file path -->
     <arg name="filepath" default="$(find osm_planner)/osm_example/botanicka.osm"/>
   </include>

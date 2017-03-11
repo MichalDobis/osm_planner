@@ -7,17 +7,12 @@
 #include <std_srvs/Empty.h>
 #include <geometry_msgs/Point.h>
 #include <tf/tf.h>
-
-//navigation plugin
-#include <costmap_2d/costmap_2d_ros.h>
-#include <costmap_2d/costmap_2d.h>
-#include <nav_core/base_global_planner.h>
+#include <tf/transform_listener.h>
 #include <sensor_msgs/NavSatFix.h>
-
 
 namespace osm_planner {
 
-    class Planner: public nav_core::BaseGlobalPlanner{
+    class Planner{
     public:
 
         typedef struct point{
@@ -28,14 +23,6 @@ namespace osm_planner {
 
         Planner();
         void initialize();
-
-        /** overriden classes from interface nav_core::BaseGlobalPlanner **/
-        Planner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
-        void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
-        bool makePlan(const geometry_msgs::PoseStamped& start,
-                      const geometry_msgs::PoseStamped& goal,
-                      std::vector<geometry_msgs::PoseStamped>& plan
-        );
 
         int makePlan(double target_latitude, double target_longitude);
 

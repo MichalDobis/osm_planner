@@ -8,11 +8,9 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
   roscpp
   message_generation
-        std_msgs
-        sensor_msgs
-        nav_core
-        pluginlib
-        navfn
+  std_msgs
+  sensor_msgs
+  tf
 )
 
 find_package(TinyXML REQUIRED)
@@ -182,8 +180,3 @@ install(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-
-
-#PLUGINLIB_EXPORT_CLASS(osm::Planner, nav_core::BaseGlobalPlanner)
-install(FILES osm_planner_plugin.xml
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
