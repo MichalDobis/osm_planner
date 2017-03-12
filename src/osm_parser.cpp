@@ -341,6 +341,10 @@ namespace osm_planner {
         this->startPoint.longitude = longitude;
     }
 
+    void Parser::setStartPoint(){
+        this->startPoint.latitude = nodes[0].latitude;
+        this->startPoint.longitude = nodes[0].longitude;
+    }
     void Parser::setNewMap(std::string xml) {
 
         this->xml = xml;

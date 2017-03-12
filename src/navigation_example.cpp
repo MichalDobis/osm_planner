@@ -13,50 +13,50 @@
 #include <std_srvs/Empty.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
-
+#include <tf/tf.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
+#include <geometry_msgs/Twist.h>
 
 std::vector<geometry_msgs::Pose> poses;
 nav_msgs::Odometry odom;
 
 bool initialized_path;
+ros::Publisher position_pub;
+ros::ServiceClient cancel_point;
+ros::ServiceClient set_source;
+
+ros::Timer timer;
+
+double angle;
 
 //getting path
-void pathCallback(const nav_msgs::Path::ConstPtr& msg) {
+void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg) {
 
-    ROS_WARN("SIMULATED ROBOT: Getting trajectory");
-    sleep(1);
-    poses.clear();
+    static ros::Time start_time = ros::Time::now();
+    double dt = (ros::Time::now() - start_time).toSec();
+    start_time = ros::Time::now();
 
-    for (int i = 0; i < msg->poses.size(); i++) {
-        poses.push_back(msg->poses[i].pose);
-        ROS_INFO("%d. Point: x = %f y = %f", i, poses[i].position.x, poses[i].position.y);
-    }
+    //dt *=2;
+    angle += dt * msg->angular.z;
 
-    initialized_path = true;
+    odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(angle);
+    odom.pose.pose.position.x += msg->linear.x * dt * sin(angle);
+    odom.pose.pose.position.y += msg->linear.x * dt * cos(angle);
+    position_pub.publish(odom);
 
 }
 
-int main(int argc, char **argv) {
 
+void updateCallback(const ros::TimerEvent&)
+{
 
-	ros::init(argc, argv, "test_osm");
-	ros::NodeHandle n;
-
-    ros::Publisher position_pub = n.advertise<nav_msgs::Odometry>("position", 5);
-    ros::Subscriber path_sub = n.subscribe("shortest_path", 1, &pathCallback);
-
-    ros::ServiceClient cancel_point = n.serviceClient<osm_planner::cancelledPoint>("cancel_point");
-
-    ros::ServiceClient set_source = n.serviceClient<osm_planner::newTarget>("init_osm_map");
-    ros::ServiceClient set_target = n.serviceClient<osm_planner::newTarget>("planning");
-
+    timer.stop();
     osm_planner::newTarget gps_srv;
+    ros::NodeHandle n;
 
-    //wait all nodes was initialized
-    sleep(5);
-
-    //start gps position
     ROS_WARN("SIMULATED ROBOT: setting gps source");
+    //start gps position
     gps_srv.request.target.latitude = 48.1463634;
     gps_srv.request.target.longitude = 17.0734773;
     //get from param if exists
@@ -64,74 +64,53 @@ int main(int argc, char **argv) {
     n.getParam("/source_lat",  gps_srv.request.target.latitude);
 
     set_source.call(gps_srv);
+}
 
-    ROS_WARN("SIMULATED ROBOT: setting gps target");
-    //target gps position
-    gps_srv.request.target.latitude = 48.1455653;
-    gps_srv.request.target.longitude = 17.0728155;
-    //get from param if exists
-    n.getParam("/target_lon", gps_srv.request.target.longitude);
-    n.getParam("/target_lat",  gps_srv.request.target.latitude);
 
-    set_target.call(gps_srv);
+int main(int argc, char **argv) {
 
-    ROS_INFO("SIMULATED ROBOT: Press enter for start movement");
-    scanf("x");
-    ROS_WARN("SIMULATED ROBOT: Starting movement...");
+    ros::init(argc, argv, "test_osm");
+    ros::NodeHandle n;
+
+    position_pub = n.advertise<nav_msgs::Odometry>("position", 5);
+    ros::Subscriber cmd_vel_sub = n.subscribe("cmd_vel", 1, &cmdVelCallback);
+
+    cancel_point = n.serviceClient<osm_planner::cancelledPoint>("cancel_point");
+    set_source = n.serviceClient<osm_planner::newTarget>("init_osm_map");
+
+    timer = n.createTimer(ros::Duration(3), updateCallback);
+
+
+    tf::TransformBroadcaster br;
+    tf::Transform transform;
+    tf::Quaternion q;
+
 
     //simulated odometry
     odom.header.frame_id = "/base_link";
     odom.pose.pose.position.x = 0;
     odom.pose.pose.position.y = 0;
+    angle = 0;
+    odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(angle);
     position_pub.publish(odom);
 
-    int seq = 0;
     initialized_path = false;
-    bool obstacle = false;
 
-    ros::Rate rate(1);
+    ros::AsyncSpinner spinner(2);
+    spinner.start();
+
+    ros::Rate rate(20);
 
     while(ros::ok()){
 
-      if (initialized_path){
+        transform.setOrigin( tf::Vector3(odom.pose.pose.position.x, odom.pose.pose.position.y, 0.0) );
+        tf::quaternionMsgToTF(odom.pose.pose.orientation, q);
+        transform.setRotation(q);
+        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/map", "/base_link"));
 
-          if (seq > poses.size()){
-
-              ROS_WARN("SIMULATED ROBOT: Target position was reached");
-              initialized_path = false;
-              continue;
-          }
-
-
-          //simulated robot moving
-          odom.header.stamp = ros::Time::now();
-          odom.pose.pose.position.x = poses[seq].position.x;
-          odom.pose.pose.position.y = poses[seq].position.y;
-          position_pub.publish(odom);
-
-
-          // simulated obstacle in 10. point
-          //trajectory must be replane
-          if (seq == 10 && !obstacle){
-
-              ROS_ERROR("SIMULATED ROBOT: Obstacle is detected. Trajectory must be replane");
-              sleep(2);
-              osm_planner::cancelledPoint point;
-              point.request.pointID = seq;
-              cancel_point.call(point);
-              initialized_path = false;
-              seq = 0;
-              obstacle = true;
-              continue;
-          }
-
-          seq++;
-      }
-
-        ros::spinOnce();
         rate.sleep();
     }
 
 
-return 0;
+    return 0;
 }

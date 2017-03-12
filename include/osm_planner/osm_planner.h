@@ -43,6 +43,7 @@ namespace osm_planner {
 
         //Before start make plan, this function must be call
         void initializePos(double lat, double lon);
+        void initializePos();
 
         //make plan from source to target
         int planning(int sourceID, int targetID);

@@ -72,6 +72,7 @@ namespace osm_planner {
 
         //SETTERS
         void setStartPoint(double latitude, double longitude); //set the zero point in cartezian coordinates
+        void setStartPoint();
         void setNewMap(std::string xml);
 
         void setInterpolationMaxDistance(double param);

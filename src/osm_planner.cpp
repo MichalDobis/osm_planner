@@ -70,6 +70,7 @@ namespace osm_planner {
             cancel_point_service = n.advertiseService("cancel_point", &Planner::cancelPointCallback, this);
 
             initialized_ros = true;
+
             ROS_WARN("OSM planner: Waiting for init position, please call init service...");
         }
     }
@@ -181,6 +182,24 @@ namespace osm_planner {
             ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
 
         osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER);
+        //draw paths network
+        osm.publishRouteNetwork();
+        initialized_position = true;
+        ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
+    }
+
+    void Planner::initializePos() {
+
+        osm.parse();
+        osm.setStartPoint();
+
+        //Save the position for path planning
+        source.geoPoint = osm.getStartPoint();
+        source.id = 0;
+        source.cartesianPoint.pose.position.x = 0;
+        source.cartesianPoint.pose.position.y = 0;
+
+        osm.publishPoint(source.geoPoint.latitude, source.geoPoint.longitude, Parser::CURRENT_POSITION_MARKER);
         //draw paths network
         osm.publishRouteNetwork();
         initialized_position = true;
