@@ -1,7 +1,5 @@
-map_frame: "/map"
+global_frame: "/map"
+robot_base_frame: "/base_link"
 topic_shortest_path: "shortest_path"
-topic_position_type: 2   #1 - use geographics coordinates
-                         #2 - use cartezian coordinates
-topic_position_name: "position"
-interpolation_max_distance: 1.0 #Max distance between two nodes of oriented graph
-
+use_tf: false
+interpolation_max_distance: 2.0 #Max distance between two nodes of oriented graph
