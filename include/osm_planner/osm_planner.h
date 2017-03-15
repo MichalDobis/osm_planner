@@ -14,6 +14,7 @@
 #include <nav_core/base_global_planner.h>
 #include <sensor_msgs/NavSatFix.h>
 
+#include <tf/transform_broadcaster.h>
 
 namespace osm_planner {
 
@@ -88,5 +89,10 @@ namespace osm_planner {
 
         double checkDistance(int node_id, double lat, double lon);
         double checkDistance(int node_id, geometry_msgs::Pose pose);
+
+        //tf broadcaster thread
+        double initial_angle;
+        boost::shared_ptr<boost::thread> tfThread;
+        void tfBroadcaster();
     };
 }

@@ -176,14 +176,19 @@ namespace osm_planner {
         source.cartesianPoint.pose.position.x = 0;
         source.cartesianPoint.pose.position.y = 0;
 
+        initial_angle = 1.57;
+        tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&Planner::tfBroadcaster, this));
+        usleep(500000);
         //checking distance to the nearest point
         double dist = checkDistance(source.id, lat, lon);
         if (dist > interpolation_max_distance)
             ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
 
-        osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER);
+
         //draw paths network
         osm.publishRouteNetwork();
+        osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER);
+
         initialized_position = true;
         ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
     }
@@ -373,4 +378,22 @@ namespace osm_planner {
 
         return sqrt(pow(x - pose.position.x, 2.0) + pow(y - pose.position.y, 2.0));
     }
+
+    void Planner::tfBroadcaster(){
+
+        tf::TransformBroadcaster br;
+        tf::Transform transform;
+        transform.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+
+        ros::Rate rate(10);
+
+        while (ros::ok()){
+
+            tf::Quaternion q;
+            q.setRPY(0, 0, initial_angle);
+            transform.setRotation(q);
+            br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), map_frame, "map"));
+        }
+    }
 }
+

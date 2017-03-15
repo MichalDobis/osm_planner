@@ -1,4 +1,4 @@
-global_frame: "/map"
+global_frame: "/world"
 robot_base_frame: "/base_link"
 topic_shortest_path: "shortest_path"
 topic_position_name: "position"

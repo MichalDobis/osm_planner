@@ -2,7 +2,7 @@
 <launch>
 
   <!--Map source-->
-  <arg name="filepath" default="$(find osm_planner)/osm_example/botanicka.osm"/>
+  <arg name="filepath" default="$(find osm_planner)/osm_example/fei.osm"/>
   <param name="filepath" value="$(arg filepath)"/>
 
   <!--load frame name, names of topics-->

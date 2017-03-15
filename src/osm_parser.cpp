@@ -268,6 +268,7 @@ namespace osm_planner {
             pose.pose.position.x = Haversine::getCoordinateX(startPoint, nodes[nodesInPath[i]]);
             pose.pose.position.y = Haversine::getCoordinateY(startPoint, nodes[nodesInPath[i]]);
             double yaw = Haversine::getBearing(startPoint, nodes[nodesInPath[i]]);
+
             pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
             pose.header.seq = i;
             sh_path.poses.push_back(pose);
