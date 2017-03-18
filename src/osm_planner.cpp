@@ -62,6 +62,12 @@ namespace osm_planner {
             n.param<std::string>("robot_base_frame", base_link_frame, "/base_link");
             n.param<bool>("use_tf", use_tf, true);
 
+            std::string topic_gps_name;
+            n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
+
+            //subscribers
+            gps_sub = n.subscribe(topic_gps_name, 1, &Planner::gpsCallback, this);
+
             //publishers
             shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
 
@@ -358,6 +364,17 @@ namespace osm_planner {
 
         initializePos(req.latitude, req.longitude, req.bearing);
         return true;
+    }
+
+    void Planner::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
+
+        setPositionFromGPS(msg->latitude, msg->longitude);
+        Parser::OSM_NODE node;
+        node.latitude = msg->latitude;
+        node.longitude = msg->longitude;
+
+        initial_angle = Parser::Haversine::getBearing(osm.getStartPoint(), node);
+        ROS_WARN("movy uhol %f", initial_angle);
     }
 
     double Planner::checkDistance(int node_id, double lat, double lon) {

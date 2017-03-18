@@ -76,6 +76,9 @@ namespace osm_planner {
         /*Publisher*/
         ros::Publisher shortest_path_pub;
 
+        /* Subscribers */
+        ros::Subscriber gps_sub;
+
         //msgs for shortest path
         nav_msgs::Path path;
 
@@ -86,6 +89,7 @@ namespace osm_planner {
         //callbacks
         bool initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
         bool cancelPointCallback(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res);
+        void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg);
 
         double checkDistance(int node_id, double lat, double lon);
         double checkDistance(int node_id, geometry_msgs::Pose pose);

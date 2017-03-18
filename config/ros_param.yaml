@@ -1,6 +1,6 @@
 global_frame: "/world"
 robot_base_frame: "/base_link"
 topic_shortest_path: "shortest_path"
-topic_position_name: "position"
+topic_gps_name: "fix"
 use_tf: true
 interpolation_max_distance: 2.0 #Max distance between two nodes of oriented graph

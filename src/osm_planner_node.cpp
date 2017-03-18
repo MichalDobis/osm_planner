@@ -16,14 +16,7 @@ public:
         //init ros topics and services
         ros::NodeHandle n;
 
-        std::string topic_name;
-        int topic_type;
-        n.param<std::string>("topic_position_name", topic_name, "/position");
-        n.param<int>("topic_position_type", topic_type, 1);
-
-        //subscribers
-        gps_sub = n.subscribe(topic_name, 1, &OsmPlannerNode::gpsCallback, this);
-        odom_sub = n.subscribe(topic_name, 1, &OsmPlannerNode::odometryCallback, this);
+        odom_sub = n.subscribe("odom", 1, &OsmPlannerNode::odometryCallback, this);
 
         //services
         plan_service = n.advertiseService("make_plan", &OsmPlannerNode::makePlanCallback, this);
@@ -47,11 +40,6 @@ private:
 
         res.result = makePlan(req.latitude, req.longitude);
         return true;
-    }
-
-    void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
-
-       setPositionFromGPS(msg->latitude, msg->longitude);
     }
 
     void odometryCallback(const nav_msgs::Odometry::ConstPtr& msg) {

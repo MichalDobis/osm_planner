@@ -65,6 +65,8 @@ void updateCallback(const ros::TimerEvent&)
     n.getParam("/source_lat",  gps_srv.request.latitude);
 
     set_source.call(gps_srv);
+   // sleep(5);
+   // set_source.call(gps_srv);
 }
 
 

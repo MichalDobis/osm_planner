@@ -59,6 +59,7 @@ namespace osm_planner {
     /**PUBLISHING FUNCTIONS**/
 
     void Parser::parse() {
+
         ros::Time start_time = ros::Time::now();
         TiXmlDocument doc(xml);
         TiXmlNode *osm;
@@ -82,13 +83,15 @@ namespace osm_planner {
         TiXmlElement *nodeElement = node->ToElement();
         TiXmlElement *wayElement = way->ToElement();
 
+
         hRootNode = TiXmlHandle(nodeElement);
         hRootWay = TiXmlHandle(wayElement);
 
         createWays(&hRootWay, &hRootNode, "highway", "footway");
         createNodes(&hRootNode);
         createNetwork();
-     //   ROS_INFO("OSM planner: Parsing time %f. Number of nodes %d ", (ros::Time::now() - start_time).toSec(),
+
+        //   ROS_INFO("OSM planner: Parsing time %f. Number of nodes %d ", (ros::Time::now() - start_time).toSec(),
       //           nodes.size());
 
     }
@@ -433,6 +436,7 @@ namespace osm_planner {
         //------------------------------------------
 
         ways.clear();
+        table.clear();
         TiXmlElement *wayElement = hRootWay->Element();
 
         OSM_WAY wayTmp;
@@ -614,6 +618,9 @@ namespace osm_planner {
             networkArray[i].resize(nodes.size());
         }
 
+        //ROS_WARN("network%d", ways[0].nodesId[1]);
+        sleep(1);
+
         double distance = 0;
         //prejde vsetky cesty
         for (int i = 0; i < ways.size(); i++) {
@@ -622,10 +629,11 @@ namespace osm_planner {
             for (int j = 0; j < ways[i].nodesId.size() - 1; j++) {
                 //vypocita vzdialenost medzi susednimi uzlami
                 distance = Haversine::getDistance(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j + 1]]);
-                //
-                if (networkArray[ways[i].nodesId[j]][ways[i].nodesId[j + 1]] != 0)
+
+                if (networkArray[ways[i].nodesId[j]][ways[i].nodesId[j + 1]] != 0) //tu to pada ked sa init vola druhy krat
                     ROS_ERROR("OSM planner: pozicia [%d, %d] je obsadena - toto by nemalo nastat", ways[i].nodesId[j],
                               ways[i].nodesId[j + 1]);
+
                 networkArray[ways[i].nodesId[j]][ways[i].nodesId[j + 1]] = (float) distance;
                 networkArray[ways[i].nodesId[j + 1]][ways[i].nodesId[j]] = (float) distance;
 
