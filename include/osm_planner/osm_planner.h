@@ -43,7 +43,7 @@ namespace osm_planner {
     protected:
 
         //Before start make plan, this function must be call
-        void initializePos(double lat, double lon);
+        void initializePos(double lat, double lon, double bearing);
         void initializePos();
 
         //make plan from source to target
@@ -53,7 +53,7 @@ namespace osm_planner {
         int cancelPoint(int pointID);
 
         //update pose
-        bool updatePose(); //from tf
+        bool updatePoseFromTF(); //from tf
         void setPositionFromGPS(double lat, double lon);        //from gps
         void setPositionFromOdom(geometry_msgs::Point point);  //from odom
 

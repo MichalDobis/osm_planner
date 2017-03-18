@@ -134,7 +134,7 @@ namespace osm_planner {
             return osm_planner::newTarget::Response::NOT_INIT;
         }
 
-        updatePose(); //update source point from TF
+        updatePoseFromTF(); //update source point from TF
 
         //save new target point
         target.geoPoint.latitude = target_latitude;
@@ -164,7 +164,7 @@ namespace osm_planner {
 
     /*--------------------PROTECTED FUNCTIONS---------------------*/
 
-    void Planner::initializePos(double lat, double lon) {
+    void Planner::initializePos(double lat, double lon, double bearing) {
 
         osm.parse();
         osm.setStartPoint(lat, lon);
@@ -176,7 +176,7 @@ namespace osm_planner {
         source.cartesianPoint.pose.position.x = 0;
         source.cartesianPoint.pose.position.y = 0;
 
-        initial_angle = 1.57;
+        initial_angle = bearing;
         tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&Planner::tfBroadcaster, this));
         usleep(500000);
         //checking distance to the nearest point
@@ -262,7 +262,7 @@ namespace osm_planner {
         osm.deleteEdgeOnGraph(path[pointID], path[pointID + 1]);
 
         //planning shorest path
-        if (!updatePose()) {     //update source position from TF
+        if (!updatePoseFromTF()) {     //update source position from TF
             source.id = path[pointID];   //if source can not update from TF, return back to last position
         }
 
@@ -283,7 +283,7 @@ namespace osm_planner {
         return osm_planner::newTarget::Response::PLAN_OK;
     }
 
-    bool Planner::updatePose() {
+    bool Planner::updatePoseFromTF() {
 
         if (!initialized_position || !use_tf)
             return false;
@@ -356,7 +356,7 @@ namespace osm_planner {
 
     bool Planner::initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
-        initializePos(req.target.latitude, req.target.longitude);
+        initializePos(req.latitude, req.longitude, req.bearing);
         return true;
     }
 

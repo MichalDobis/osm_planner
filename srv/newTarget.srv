@@ -1,4 +1,6 @@
-sensor_msgs/NavSatFix target
+float64 latitude
+float64 longitude
+float64 bearing
 ---
 uint8 PLAN_OK = 0
 uint8 TARGET_IS_OUT_OF_WAY = 1

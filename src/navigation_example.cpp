@@ -57,11 +57,12 @@ void updateCallback(const ros::TimerEvent&)
 
     ROS_WARN("SIMULATED ROBOT: setting gps source");
     //start gps position
-    gps_srv.request.target.latitude = 48.1463634;
-    gps_srv.request.target.longitude = 17.0734773;
+    gps_srv.request.latitude = 48.1463634;
+    gps_srv.request.longitude = 17.0734773;
+    gps_srv.request.bearing = 0;
     //get from param if exists
-    n.getParam("/source_lon", gps_srv.request.target.longitude);
-    n.getParam("/source_lat",  gps_srv.request.target.latitude);
+    n.getParam("/source_lon", gps_srv.request.longitude);
+    n.getParam("/source_lat",  gps_srv.request.latitude);
 
     set_source.call(gps_srv);
 }

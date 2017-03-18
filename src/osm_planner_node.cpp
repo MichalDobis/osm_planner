@@ -30,7 +30,7 @@ public:
     }
 
     void update(){
-        updatePose();
+        updatePoseFromTF();
     }
 
 private:
@@ -45,7 +45,7 @@ private:
 
     bool makePlanCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res) {
 
-        res.result = makePlan(req.target.latitude, req.target.longitude);
+        res.result = makePlan(req.latitude, req.longitude);
         return true;
     }
 
