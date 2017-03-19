@@ -14,7 +14,7 @@ namespace osm_planner {
       //  std::string topic_name;
 
         //get the parameters
-        n.param<std::string>("rotated_global_frame", map_frame, "/map");
+        n.param<std::string>("global_frame", map_frame, "/world");
         n.param<bool>("/visualization", visualization, false);
 
         //publishers
@@ -38,7 +38,7 @@ namespace osm_planner {
         //std::string topic_name;
 
         //get the parameters
-        n.param<std::string>("map_frame", map_frame, "/map");
+        n.param<std::string>("global_frame", map_frame, "/world");
         n.param<bool>("/visualization", visualization, false);
 
         //publishers

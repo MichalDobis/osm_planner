@@ -1,5 +1,5 @@
-global_frame: "world"
-rotated_global_frame: "map"
+global_frame: "map"
+local_map_frame: "local_map"
 robot_base_frame: "base_link"
 topic_shortest_path: "shortest_path"
 topic_gps_name: "fix"

@@ -59,7 +59,7 @@ namespace osm_planner {
 
             //names of frames
             n.param<std::string>("global_frame", map_frame, "/map");
-            n.param<std::string>("rotated_global_frame", rotated_map_frame, "/rotated_map");
+            n.param<std::string>("local_map_frame", local_map_frame, "/rotated_map");
             n.param<std::string>("robot_base_frame", base_link_frame, "/base_link");
             n.param<bool>("use_tf", use_tf, true);
 
@@ -300,8 +300,8 @@ namespace osm_planner {
         tf::StampedTransform transform;
 
         try {
-            listener.waitForTransform(base_link_frame, rotated_map_frame, ros::Time(0), ros::Duration(1));
-            listener.lookupTransform(base_link_frame, rotated_map_frame, ros::Time(0), transform);
+            listener.waitForTransform(base_link_frame, map_frame, ros::Time(0), ros::Duration(1));
+            listener.lookupTransform(base_link_frame, map_frame, ros::Time(0), transform);
         } catch (tf::TransformException ex) {
            ROS_WARN("OSM planner: %s. Can't update pose from TF, for that will be use the latest source point.",
                     ex.what());
@@ -414,7 +414,7 @@ namespace osm_planner {
 
         while (ros::ok()){
 
-            br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), map_frame, rotated_map_frame));
+            br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), map_frame, local_map_frame));
             rate.sleep();
         }
     }

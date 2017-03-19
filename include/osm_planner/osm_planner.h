@@ -70,7 +70,7 @@ namespace osm_planner {
 
         //global ros parameters
         bool use_tf;
-        std::string map_frame, base_link_frame, rotated_map_frame;
+        std::string map_frame, base_link_frame, local_map_frame;
         double interpolation_max_distance;
 
         /*Publisher*/
