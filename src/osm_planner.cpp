@@ -59,6 +59,7 @@ namespace osm_planner {
 
             //names of frames
             n.param<std::string>("global_frame", map_frame, "/map");
+            n.param<std::string>("rotated_global_frame", rotated_map_frame, "/rotated_map");
             n.param<std::string>("robot_base_frame", base_link_frame, "/base_link");
             n.param<bool>("use_tf", use_tf, true);
 
@@ -299,8 +300,8 @@ namespace osm_planner {
         tf::StampedTransform transform;
 
         try {
-            listener.waitForTransform(base_link_frame, map_frame, ros::Time(0), ros::Duration(1));
-            listener.lookupTransform(base_link_frame, map_frame, ros::Time(0), transform);
+            listener.waitForTransform(base_link_frame, rotated_map_frame, ros::Time(0), ros::Duration(1));
+            listener.lookupTransform(base_link_frame, rotated_map_frame, ros::Time(0), transform);
         } catch (tf::TransformException ex) {
            ROS_WARN("OSM planner: %s. Can't update pose from TF, for that will be use the latest source point.",
                     ex.what());
@@ -374,7 +375,12 @@ namespace osm_planner {
         node.longitude = msg->longitude;
 
         initial_angle = Parser::Haversine::getBearing(osm.getStartPoint(), node);
-        ROS_WARN("movy uhol %f", initial_angle);
+
+        tf::Quaternion q;
+        q.setRPY(0, 0, initial_angle);
+        transform.setRotation(q);
+
+        ROS_WARN("novy uhol %f", initial_angle);
     }
 
     double Planner::checkDistance(int node_id, double lat, double lon) {
@@ -398,18 +404,18 @@ namespace osm_planner {
 
     void Planner::tfBroadcaster(){
 
-        tf::TransformBroadcaster br;
-        tf::Transform transform;
+        //inicialize TF broadcaster
         transform.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+        tf::Quaternion q;
+        q.setRPY(0, 0, initial_angle);
+        transform.setRotation(q);
 
         ros::Rate rate(10);
 
         while (ros::ok()){
 
-            tf::Quaternion q;
-            q.setRPY(0, 0, initial_angle);
-            transform.setRotation(q);
-            br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), map_frame, "map"));
+            br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), map_frame, rotated_map_frame));
+            rate.sleep();
         }
     }
 }

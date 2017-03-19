@@ -130,7 +130,8 @@ namespace osm_planner {
 
         void createMarkers();
 
-        void createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::string osm_key, std::string osm_value);
+        void createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::vector<std::string> osm_value);
+        bool isSelectedWay(TiXmlElement *tag, std::vector<std::string> values);
 
         void createNodes(TiXmlHandle *hRootNode);
 

@@ -59,7 +59,7 @@ void updateCallback(const ros::TimerEvent&)
     //start gps position
     gps_srv.request.latitude = 48.1463634;
     gps_srv.request.longitude = 17.0734773;
-    gps_srv.request.bearing = 0;
+    gps_srv.request.bearing = 1.57;
     //get from param if exists
     n.getParam("/source_lon", gps_srv.request.longitude);
     n.getParam("/source_lat",  gps_srv.request.latitude);

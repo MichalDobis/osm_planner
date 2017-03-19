@@ -14,7 +14,7 @@ namespace osm_planner {
       //  std::string topic_name;
 
         //get the parameters
-        n.param<std::string>("robot_base_frame", map_frame, "/map");
+        n.param<std::string>("rotated_global_frame", map_frame, "/map");
         n.param<bool>("/visualization", visualization, false);
 
         //publishers
@@ -87,7 +87,12 @@ namespace osm_planner {
         hRootNode = TiXmlHandle(nodeElement);
         hRootWay = TiXmlHandle(wayElement);
 
-        createWays(&hRootWay, &hRootNode, "highway", "footway");
+
+        ros::NodeHandle n;
+        std::vector<std::string> types_of_ways;
+        n.getParam("filter_of_ways",types_of_ways);
+
+        createWays(&hRootWay, &hRootNode, types_of_ways);
         createNodes(&hRootNode);
         createNetwork();
 
@@ -259,15 +264,18 @@ namespace osm_planner {
 
         sh_path.poses.clear();
         sh_path.header.frame_id = map_frame;
+        sh_path.header.stamp = ros::Time::now();
 
         geometry_msgs::PoseStamped pose;
 
         pose.pose.position.x = 0;
         pose.pose.position.y = 0;
         pose.pose.position.z = 0;
+        pose.header.frame_id = map_frame;
 
         for (int i = 0; i < nodesInPath.size(); i++) {
 
+            pose.header.stamp = ros::Time::now();
             pose.pose.position.x = Haversine::getCoordinateX(startPoint, nodes[nodesInPath[i]]);
             pose.pose.position.y = Haversine::getCoordinateY(startPoint, nodes[nodesInPath[i]]);
             double yaw = Haversine::getBearing(startPoint, nodes[nodesInPath[i]]);
@@ -277,7 +285,6 @@ namespace osm_planner {
             sh_path.poses.push_back(pose);
         }
 
-        sh_path.header.stamp = ros::Time::now();
         return sh_path;
     }
 
@@ -417,7 +424,7 @@ namespace osm_planner {
 // osm_value = "footway"
 // will selected only footways
     void
-    Parser::createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::string osm_key, std::string osm_value) {
+    Parser::createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::vector<std::string> osm_value) {
 
         //ADDED for interpolation
         //------------------------------------------
@@ -451,10 +458,7 @@ namespace osm_planner {
             //prejde vsetky elementy tag
             while (tag != NULL) {
 
-                std::string key(tag->Attribute("k"));
-                std::string value(tag->Attribute("v"));
-
-                if (key == "null" || (key == osm_key && value == osm_value)) {
+                if (isSelectedWay(tag, osm_value)) {
 
                     wayElement->Attribute("id", &wayTmp.id);
                     getNodesInWay(wayElement, &wayTmp, nodes); //finding all nodes located in selected way
@@ -464,6 +468,26 @@ namespace osm_planner {
                 tag = tag->NextSiblingElement("tag");
             }
         }
+    }
+
+    bool Parser::isSelectedWay(TiXmlElement *tag, std::vector<std::string> values) {
+
+        std::string key(tag->Attribute("k"));
+        std::string value(tag->Attribute("v"));
+
+        if (values.size() == 0)
+            return true; //selected all
+
+        if (key == "highway") {
+            if (values[0] == "all")
+                return true; //selected all ways with key highway
+
+            for (int i = 0; i < values.size(); i++) {
+                if (value == values[i])
+                    return true;
+            }
+        }
+        return false;
     }
 
 //finding nodes located on way and fill way.nodesId

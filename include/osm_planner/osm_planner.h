@@ -70,7 +70,7 @@ namespace osm_planner {
 
         //global ros parameters
         bool use_tf;
-        std::string map_frame, base_link_frame;
+        std::string map_frame, base_link_frame, rotated_map_frame;
         double interpolation_max_distance;
 
         /*Publisher*/
@@ -85,6 +85,10 @@ namespace osm_planner {
         /* Services */
         ros::ServiceServer init_service;
         ros::ServiceServer cancel_point_service;
+
+        /*tf broadcaster*/
+        tf::TransformBroadcaster br;
+        tf::Transform transform;
 
         //callbacks
         bool initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
