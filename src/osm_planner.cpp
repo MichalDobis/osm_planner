@@ -71,6 +71,7 @@ namespace osm_planner {
 
             //publishers
             shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
+            utm_init_pub = n.advertise<sensor_msgs::NavSatFix>("utm/init", 10);
 
             //services
             init_service = n.advertiseService("init_osm_map", &Planner::initCallback, this);
@@ -327,6 +328,7 @@ namespace osm_planner {
         source.cartesianPoint.pose.position.y = Parser::Haversine::getCoordinateY(osm.getStartPoint(), source.geoPoint);
         source.cartesianPoint.pose.orientation = tf::createQuaternionMsgFromYaw(Parser::Haversine::getBearing(osm.getStartPoint(), source.geoPoint));
 
+        ROS_WARN("update pos from gps");
         osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER);
 
         //checking distance to the nearest point
@@ -364,16 +366,31 @@ namespace osm_planner {
     bool Planner::initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
         initializePos(req.latitude, req.longitude, req.bearing);
+
+        sensor_msgs::NavSatFix fix;
+
+        fix.latitude = req.latitude;
+        fix.longitude = req.longitude;
+
+        fix.header.frame_id = base_link_frame;
+        utm_init_pub.publish(fix);
+
         return true;
     }
 
     void Planner::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
 
+       if (!initialized_position){
+
+       }
+
+        //todo - dorobit citanie gps vzhladom na frame
         setPositionFromGPS(msg->latitude, msg->longitude);
         Parser::OSM_NODE node;
         node.latitude = msg->latitude;
         node.longitude = msg->longitude;
 
+        //todo spravit update uhlu len ked prejde nejaku vzdialenost
         initial_angle = Parser::Haversine::getBearing(osm.getStartPoint(), node);
 
         tf::Quaternion q;

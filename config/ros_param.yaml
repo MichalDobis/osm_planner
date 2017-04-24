@@ -3,6 +3,6 @@ local_map_frame: "local_map"
 robot_base_frame: "base_link"
 topic_shortest_path: "shortest_path"
 topic_gps_name: "fix"
-use_tf: true
+use_tf: false
 interpolation_max_distance: 2.0 #Max distance between two nodes of oriented graph
-filter_of_ways: ["footway"]
+filter_of_ways: ["all"]
