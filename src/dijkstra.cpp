@@ -60,6 +60,10 @@ namespace osm_planner {
                     dist[v] = dist[u] + (*graph)[u][v];
 
                 }
+
+            // print the constructed distance array
+                if (u == target) return getSolution(parent, dist, target);
+
         }
 
         // print the constructed distance array
