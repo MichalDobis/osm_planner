@@ -9,23 +9,23 @@ namespace osm_planner {
 
     Parser::Parser() {
 
-        ros::NodeHandle n;
+        ros::NodeHandle n("~");
 
       //  std::string topic_name;
 
         //get the parameters
         n.param<std::string>("global_frame", map_frame, "/world");
-        n.param<bool>("/visualization", visualization, false);
+        n.param<bool>("visualization", visualization, false);
 
         //publishers
 
         if (visualization) {
             //Publishers for visualization
-            position_marker_pub = n.advertise<visualization_msgs::Marker>("/position_marker", 5);
-            target_marker_pub = n.advertise<visualization_msgs::Marker>("/target_marker", 1);
+            position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
+            target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
 
-            path_pub = n.advertise<nav_msgs::Path>("/route_network", 10);
-            refused_path_pub = n.advertise<nav_msgs::Path>("/refused_path", 10);
+            path_pub = n.advertise<nav_msgs::Path>("route_network", 10);
+            refused_path_pub = n.advertise<nav_msgs::Path>("refused_path", 10);
         }
 
         createMarkers();
@@ -33,7 +33,7 @@ namespace osm_planner {
 
     Parser::Parser(std::string file) : xml(file) {
 
-        ros::NodeHandle n;
+        ros::NodeHandle n("~");
 
         //std::string topic_name;
 
@@ -46,13 +46,12 @@ namespace osm_planner {
 
         if (visualization) {
             //Publishers for visualization
-            position_marker_pub = n.advertise<visualization_msgs::Marker>("/position_marker", 5);
-            target_marker_pub = n.advertise<visualization_msgs::Marker>("/target_marker", 1);
+            position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
+            target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
 
-            path_pub = n.advertise<nav_msgs::Path>("/route_network", 10);
-            refused_path_pub = n.advertise<nav_msgs::Path>("/refused_path", 10);
+            path_pub = n.advertise<nav_msgs::Path>("route_network", 10);
+            refused_path_pub = n.advertise<nav_msgs::Path>("refused_path", 10);
         }
-
         createMarkers();
     }
 
@@ -87,18 +86,14 @@ namespace osm_planner {
         hRootNode = TiXmlHandle(nodeElement);
         hRootWay = TiXmlHandle(wayElement);
 
-
-        ros::NodeHandle n;
+        ros::NodeHandle n("~");
         std::vector<std::string> types_of_ways;
         n.getParam("filter_of_ways",types_of_ways);
 
         createWays(&hRootWay, &hRootNode, types_of_ways);
         createNodes(&hRootNode);
+
         createNetwork();
-
-        //   ROS_INFO("OSM planner: Parsing time %f. Number of nodes %d ", (ros::Time::now() - start_time).toSec(),
-      //           nodes.size());
-
     }
 
     void Parser::publishPoint(double latitude, double longitude, int marker_type) {
@@ -346,30 +341,33 @@ namespace osm_planner {
 
     /* SETTERS */
 
-    void Parser::setStartPoint(double latitude, double longitude) {
+   void Parser::setStartPoint(double latitude, double longitude) {
 
         this->startPoint.latitude = latitude;
         this->startPoint.longitude = longitude;
-    }
+   }
 
-    void Parser::setStartPoint(){
-        this->startPoint.latitude = nodes[0].latitude;
-        this->startPoint.longitude = nodes[0].longitude;
-    }
-    void Parser::setNewMap(std::string xml) {
+   void Parser::setStartPoint(){
+
+       int id =  (int) (((double)rand() / RAND_MAX) * size_of_nodes);
+
+        this->startPoint.latitude = nodes[id].latitude;
+        this->startPoint.longitude = nodes[id].longitude;
+   }
+   void Parser::setNewMap(std::string xml) {
 
         this->xml = xml;
         //parse();
-    }
+   }
 
-    void Parser::setInterpolationMaxDistance(double param) {
+   void Parser::setInterpolationMaxDistance(double param) {
         this->interpolation_max_distance = param;
-    }
+   }
 
 
 //private functions
 
-    void Parser::createMarkers() {
+   void Parser::createMarkers() {
 
         if (!visualization)
             return;
@@ -415,7 +413,7 @@ namespace osm_planner {
         //red marker
         target_marker.color.g = 0.0f;
 
-    }
+   }
 
 //parse all ways in osm maps if osm_key = "null"
 //else parse selected type of way.
@@ -423,8 +421,7 @@ namespace osm_planner {
 // osm_key = "highway"
 // osm_value = "footway"
 // will selected only footways
-    void
-    Parser::createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::vector<std::string> osm_value) {
+   void Parser::createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::vector<std::string> osm_value) {
 
         //ADDED for interpolation
         //------------------------------------------
@@ -444,6 +441,8 @@ namespace osm_planner {
 
         ways.clear();
         table.clear();
+        size_of_nodes = 0;
+
         TiXmlElement *wayElement = hRootWay->Element();
 
         OSM_WAY wayTmp;
@@ -468,9 +467,9 @@ namespace osm_planner {
                 tag = tag->NextSiblingElement("tag");
             }
         }
-    }
+   }
 
-    bool Parser::isSelectedWay(TiXmlElement *tag, std::vector<std::string> values) {
+   bool Parser::isSelectedWay(TiXmlElement *tag, std::vector<std::string> values) {
 
         std::string key(tag->Attribute("k"));
         std::string value(tag->Attribute("v"));
@@ -488,15 +487,14 @@ namespace osm_planner {
             }
         }
         return false;
-    }
+   }
 
 //finding nodes located on way and fill way.nodesId
-    void Parser::getNodesInWay(TiXmlElement *wayElement, OSM_WAY *way, std::vector<OSM_NODE_WITH_ID> nodes) {
+   void Parser::getNodesInWay(TiXmlElement *wayElement, OSM_WAY *way, std::vector<OSM_NODE_WITH_ID> nodes) {
 
         TiXmlHandle hRootNode(0);
         TiXmlElement *nodeElement;
         int id;
-        static int id_new = 0;
 
         way->nodesId.clear();
 
@@ -531,8 +529,8 @@ namespace osm_planner {
                 for (int i = 0; i < new_nodes_list.size(); i++) { //get the interpolated nodes
 
                     memcpy(&node_old.node, &new_nodes_list[i], sizeof(OSM_NODE)); //copy information about lon and lat
-                    node_old.id = id_new;           //set the ID
-                    tableTmp.newID = id_new++;      //set the ID in translate table and increment ID
+                    node_old.id = size_of_nodes;           //set the ID
+                    tableTmp.newID = size_of_nodes++;      //set the ID in translate table and increment ID
                     table.push_back(tableTmp);
                     way->nodesId.push_back(tableTmp.newID); //add interpolated node on way
                     interpolated_nodes.push_back(node_old); //add interpolated node in buffer. It will use later.
@@ -547,7 +545,7 @@ namespace osm_planner {
             int ret;
             if (!translateID(tableTmp.oldID, &ret)) {
 
-                tableTmp.newID = id_new++;
+                tableTmp.newID = size_of_nodes++;
                 table.push_back(tableTmp);
                 way->nodesId.push_back(tableTmp.newID);
 
@@ -561,12 +559,12 @@ namespace osm_planner {
 
         }
 
-    }
+   }
 
 //ADDED for interpolation
 //------------------------------------------
 //Finding nodes by OSM ID
-    Parser::OSM_NODE_WITH_ID Parser::getNodeByOsmId(std::vector<OSM_NODE_WITH_ID> nodes, int id) {
+   Parser::OSM_NODE_WITH_ID Parser::getNodeByOsmId(std::vector<OSM_NODE_WITH_ID> nodes, int id) {
 
         for (int i = 0; i < nodes.size(); i++) {
             if (nodes[i].id == id)
@@ -574,10 +572,10 @@ namespace osm_planner {
         }
         ROS_ERROR("OSM planner: nenaslo ziadnu nodu - toto by sa nemalo stat");
         return nodes[0];
-    }
+   }
 
 //INTERPOLATION - main algorithm
-    std::vector<Parser::OSM_NODE> Parser::getInterpolatedNodes(OSM_NODE node1, OSM_NODE node2) {
+   std::vector<Parser::OSM_NODE> Parser::getInterpolatedNodes(OSM_NODE node1, OSM_NODE node2) {
 
         std::vector<OSM_NODE> new_nodes;
         OSM_NODE new_node;
@@ -595,12 +593,12 @@ namespace osm_planner {
             new_nodes.push_back(new_node);
         }
         return new_nodes;
-    }
+   }
 //------------------------------------------
 
 
-    //parse all osm nodes and select nodes located in ways (footways)
-    void Parser::createNodes(TiXmlHandle *hRootNode) {
+   //parse all osm nodes and select nodes located in ways (footways)
+   void Parser::createNodes(TiXmlHandle *hRootNode) {
 
         nodes.clear();
         nodes.resize(table.size());
@@ -631,19 +629,13 @@ namespace osm_planner {
         }
         //------------------------------------------
 
-    }
+   }
 
-    //creating graph for dijkstra algorithm
-    void Parser::createNetwork() {
+   //creating graph for dijkstra algorithm
+   void Parser::createNetwork() {
 
-        networkArray.resize(nodes.size());
-
-        for (int i = 0; i < networkArray.size(); i++) {
-            networkArray[i].resize(nodes.size());
-        }
-
-        //ROS_WARN("network%d", ways[0].nodesId[1]);
-        sleep(1);
+        networkArray.clear();
+        networkArray.resize(nodes.size(), std::vector<float>(nodes.size(), 0.0));
 
         double distance = 0;
         //prejde vsetky cesty
@@ -651,10 +643,13 @@ namespace osm_planner {
 
             //prejde vsetky uzly na ceste
             for (int j = 0; j < ways[i].nodesId.size() - 1; j++) {
+
                 //vypocita vzdialenost medzi susednimi uzlami
                 distance = Haversine::getDistance(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j + 1]]);
+              //  ROS_INFO("[%d %d]",ways[i].nodesId[j], ways[i].nodesId[j + 1]);
+              //  ROS_INFO("dist %f", distance);
 
-                if (networkArray[ways[i].nodesId[j]][ways[i].nodesId[j + 1]] != 0) //tu to pada ked sa init vola druhy krat
+                if (networkArray[ways[i].nodesId[j]][ways[i].nodesId[j + 1]] != 0)
                     ROS_ERROR("OSM planner: pozicia [%d, %d] je obsadena - toto by nemalo nastat", ways[i].nodesId[j],
                               ways[i].nodesId[j + 1]);
 
@@ -666,11 +661,17 @@ namespace osm_planner {
         }
         interpolated_nodes.clear();
         table.clear();
-    }
+
+       /* networkArray.clear();
+        for (int i = 0; i < networkArray.size(); i++) {
+            networkArray[i].clear();
+        }*/
+
+   }
 
 
 //preklada stare osm node ID na nove osm node ID (cielom bolo vytvorit usporiadane indexovanie)
-    bool Parser::translateID(int id, int *ret_value) {
+   bool Parser::translateID(int id, int *ret_value) {
 
         for (int i = 0; i < table.size(); i++) {
             if (table[i].oldID == id) {
@@ -679,7 +680,7 @@ namespace osm_planner {
             }
         }
         return false;
-    }
+   }
 
 
 //Embedded class for calculating distance and bearing

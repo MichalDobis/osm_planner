@@ -110,13 +110,14 @@ namespace osm_planner {
         ros::Publisher target_marker_pub;
         ros::Publisher path_pub;
         ros::Publisher refused_path_pub;
-       // ros::Publisher shortest_path_pub;
 
         //visualization msgs
         visualization_msgs::Marker position_marker, target_marker;
 
         std::string map_frame; //name of frame for msgs
         bool visualization; //enable or disable publishing markers and paths for rviz visualization
+
+        int size_of_nodes;  //usage in function getNodesInWay(), counter of currently read nodes
 
         //vector arrays of OSM nodes and ways
         std::vector<OSM_WAY> ways;

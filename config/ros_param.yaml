@@ -6,3 +6,5 @@ topic_gps_name: "fix"
 use_tf: false
 interpolation_max_distance: 2.0 #Max distance between two nodes of oriented graph
 filter_of_ways: ["all"]
+visualization: true
+set_random_pose: true

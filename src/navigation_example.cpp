@@ -64,7 +64,7 @@ void updateCallback(const ros::TimerEvent&)
     n.getParam("/source_lon", gps_srv.request.longitude);
     n.getParam("/source_lat",  gps_srv.request.latitude);
 
-    set_source.call(gps_srv);
+    //set_source.call(gps_srv);
    // sleep(5);
    // set_source.call(gps_srv);
 }
@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     ros::Subscriber cmd_vel_sub = n.subscribe("cmd_vel", 1, &cmdVelCallback);
 
     cancel_point = n.serviceClient<osm_planner::cancelledPoint>("cancel_point");
-    set_source = n.serviceClient<osm_planner::newTarget>("init_osm_map");
+    set_source = n.serviceClient<osm_planner::newTarget>("init");
 
     timer = n.createTimer(ros::Duration(3), updateCallback);
 

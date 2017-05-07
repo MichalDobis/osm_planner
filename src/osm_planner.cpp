@@ -39,18 +39,22 @@ namespace osm_planner {
         initialize();
     }
 
+    //-------------------------------------------------------------//
+    //------------------Initialize ROS utilities-------------------//
+    //-------------------------------------------------------------//
+
     void Planner::initialize(){
 
         if (!initialized_ros) {
             //init ros topics and services
-            ros::NodeHandle n;
+            ros::NodeHandle n("~");
 
             //source of map
             std::string file = "skuska.osm";
             n.getParam("filepath", file);
             osm.setNewMap(file);
 
-            //for point interpolation
+            //Set the density of points
             n.param<double>("interpolation_max_distance", interpolation_max_distance, 1000);
             osm.setInterpolationMaxDistance(interpolation_max_distance);
 
@@ -71,17 +75,27 @@ namespace osm_planner {
 
             //publishers
             shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
-            utm_init_pub = n.advertise<sensor_msgs::NavSatFix>("utm/init", 10);
+            utm_init_pub = n.advertise<sensor_msgs::NavSatFix>("/utm/init", 10);
 
             //services
-            init_service = n.advertiseService("init_osm_map", &Planner::initCallback, this);
+            init_service = n.advertiseService("init", &Planner::initCallback, this);
             cancel_point_service = n.advertiseService("cancel_point", &Planner::cancelPointCallback, this);
 
             initialized_ros = true;
 
-            ROS_WARN("OSM planner: Waiting for init position, please call init service...");
+            //Debug param
+            bool set_random_pose;
+            n.param<bool>("set_random_pose", set_random_pose, false);
+            if (set_random_pose)
+                initializePos();
+            else
+                ROS_WARN("OSM planner: Waiting for init position, please call init service...");
         }
     }
+
+    //-------------------------------------------------------------//
+    //-------------MAKE PLAN from cartesian coordinates------------//
+    //-------------------------------------------------------------//
 
     bool Planner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
 
@@ -135,6 +149,10 @@ namespace osm_planner {
         return true;
     }
 
+    //-------------------------------------------------------------//
+    //-----------MAKE PLAN from geographics coordinates------------//
+    //-------------------------------------------------------------//
+
     int Planner::makePlan(double target_latitude, double target_longitude) {
 
         //Reference point is not initialize, please call init service
@@ -172,6 +190,10 @@ namespace osm_planner {
 
     /*--------------------PROTECTED FUNCTIONS---------------------*/
 
+    //-------------------------------------------------------------//
+    //---------------Initialize pose from gps source---------------//
+    //-------------------------------------------------------------//
+
     void Planner::initializePos(double lat, double lon, double bearing) {
 
         osm.parse();
@@ -201,6 +223,9 @@ namespace osm_planner {
         ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
     }
 
+    //-------------------------------------------------------------//
+    //--------Initialize pose from random gen - for debug----------//
+    //-------------------------------------------------------------//
     void Planner::initializePos() {
 
         osm.parse();
@@ -219,6 +244,9 @@ namespace osm_planner {
         ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
     }
 
+    //-------------------------------------------------------------//
+    //-----------------MAKE PLAN from osm id's---------------------//
+    //-------------------------------------------------------------//
 
     int Planner::planning(int sourceID, int targetID) {
 
@@ -237,13 +265,17 @@ namespace osm_planner {
 
         } catch (dijkstra_exception &e) {
             if (e.get_err_id() == dijkstra_exception::NO_PATH_FOUND) {
-                ROS_ERROR("OSM planner: Planning failed...");
+                ROS_ERROR("OSM planner: Make plan failed...");
             } else
                 ROS_ERROR("OSM planner: Undefined error");
             return osm_planner::newTarget::Response::PLAN_FAILED;
         }
         return osm_planner::newTarget::Response::PLAN_OK;
     }
+
+    //-------------------------------------------------------------//
+    //-------------Refuse point and make plan again----------------//
+    //-------------------------------------------------------------//
 
     int Planner::cancelPoint(int pointID) {
 
@@ -282,7 +314,7 @@ namespace osm_planner {
 
         } catch (dijkstra_exception &e) {
             if (e.get_err_id() == dijkstra_exception::NO_PATH_FOUND) {
-                ROS_ERROR("OSM planner: Planning failed");
+                ROS_ERROR("OSM planner: Make plan failed");
             } else
                 ROS_ERROR("OSM planner: Undefined error");
             return osm_planner::cancelledPoint::Response::PLAN_FAILED;
@@ -290,6 +322,10 @@ namespace osm_planner {
 
         return osm_planner::newTarget::Response::PLAN_OK;
     }
+
+    //-------------------------------------------------------------//
+    //-----------------UPDATE POSE FUNCTIONS-----------------------//
+    //-------------------------------------------------------------//
 
     bool Planner::updatePoseFromTF() {
 
@@ -353,6 +389,9 @@ namespace osm_planner {
         if (dist > interpolation_max_distance)
             ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
     }
+
+    //-------------------------------------------------------------//
+    //-------------------------------------------------------------//
 
 
     /*--------------------PRIVATE FUNCTIONS---------------------*/
