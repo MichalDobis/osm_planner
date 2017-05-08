@@ -66,6 +66,7 @@ namespace osm_planner {
             n.param<std::string>("local_map_frame", local_map_frame, "/rotated_map");
             n.param<std::string>("robot_base_frame", base_link_frame, "/base_link");
             n.param<bool>("use_tf", use_tf, true);
+            n.param<bool>("update_rotation", update_rotation, true);
 
             std::string topic_gps_name;
             n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
@@ -112,7 +113,7 @@ namespace osm_planner {
         target.cartesianPoint.pose = goal.pose;
 
         //draw target point
-        osm.publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER);
+        osm.publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER, 5.0);
 
         double dist = checkDistance(target.id, target.cartesianPoint.pose);
         if (dist > interpolation_max_distance) {
@@ -132,7 +133,6 @@ namespace osm_planner {
         for (int i=0; i< path.poses.size(); i++){
 
             geometry_msgs::PoseStamped new_goal = goal;
-            tf::Quaternion goal_quat = tf::createQuaternionFromYaw(1.54);
 
             new_goal.pose.position.x = path.poses[i].pose.position.x;
             new_goal.pose.position.y = path.poses[i].pose.position.y;
@@ -171,7 +171,7 @@ namespace osm_planner {
         target.cartesianPoint.pose.orientation = tf::createQuaternionMsgFromYaw(Parser::Haversine::getBearing(osm.getStartPoint(), target.geoPoint));
 
         //draw target point
-        osm.publishPoint(target_latitude, target_longitude, Parser::TARGET_POSITION_MARKER);
+        osm.publishPoint(target_latitude, target_longitude, Parser::TARGET_POSITION_MARKER, 5.0);
 
         //checking distance to the nearest point
         double dist = checkDistance(target.id, target.geoPoint.latitude, target.geoPoint.longitude);
@@ -217,7 +217,7 @@ namespace osm_planner {
 
         //draw paths network
         osm.publishRouteNetwork();
-        osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER);
+        osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER, 50.0);
 
         initialized_position = true;
         ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
@@ -237,7 +237,7 @@ namespace osm_planner {
         source.cartesianPoint.pose.position.x = 0;
         source.cartesianPoint.pose.position.y = 0;
 
-        osm.publishPoint(source.geoPoint.latitude, source.geoPoint.longitude, Parser::CURRENT_POSITION_MARKER);
+        osm.publishPoint(source.geoPoint.latitude, source.geoPoint.longitude, Parser::CURRENT_POSITION_MARKER, 5.0);
         //draw paths network
         osm.publishRouteNetwork();
         initialized_position = true;
@@ -351,7 +351,7 @@ namespace osm_planner {
     }
 
 
-    void Planner::setPositionFromGPS(double lat, double lon) {
+    void Planner::setPositionFromGPS(double lat, double lon, double accuracy) {
 
         if (!initialized_position)
             return;
@@ -364,8 +364,7 @@ namespace osm_planner {
         source.cartesianPoint.pose.position.y = Parser::Haversine::getCoordinateY(osm.getStartPoint(), source.geoPoint);
         source.cartesianPoint.pose.orientation = tf::createQuaternionMsgFromYaw(Parser::Haversine::getBearing(osm.getStartPoint(), source.geoPoint));
 
-        ROS_WARN("update pos from gps");
-        osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER);
+        osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER, accuracy);
 
         //checking distance to the nearest point
         double dist = checkDistance(source.id, lat, lon);
@@ -382,7 +381,7 @@ namespace osm_planner {
         //update source point
         source.id = osm.getNearestPointXY(point.x, point.y);
         source.cartesianPoint.pose.position = point;
-        osm.publishPoint(point, Parser::CURRENT_POSITION_MARKER);
+       // osm.publishPoint(point, Parser::CURRENT_POSITION_MARKER, 5.0);
 
         //checking distance to the nearest point
         double dist = checkDistance(source.id, source.cartesianPoint.pose);
@@ -419,24 +418,48 @@ namespace osm_planner {
 
     void Planner::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
 
-       if (!initialized_position){
+        if (!initialized_position)
+            return;
 
-       }
+        static Parser::OSM_NODE lastPoint = osm.getStartPoint();
+        Parser::OSM_NODE newNode;
+
+        newNode.latitude = msg->latitude;
+        newNode.longitude = msg->longitude;
+
+        double cov = getAccuracy(msg);
+        ROS_WARN("cov %f", cov);
+
+        static double last_cov = 1000;
 
         //todo - dorobit citanie gps vzhladom na frame
-        setPositionFromGPS(msg->latitude, msg->longitude);
-        Parser::OSM_NODE node;
-        node.latitude = msg->latitude;
-        node.longitude = msg->longitude;
+        setPositionFromGPS(msg->latitude, msg->longitude, cov);
 
-        //todo spravit update uhlu len ked prejde nejaku vzdialenost
-        initial_angle = Parser::Haversine::getBearing(osm.getStartPoint(), node);
+//        if (Parser::Haversine::getDistance(lastPoint, newNode) > 5.0) {
 
-        tf::Quaternion q;
-        q.setRPY(0, 0, initial_angle);
-        transform.setRotation(q);
+        if (update_rotation) {
+            initial_angle = Parser::Haversine::getBearing(lastPoint, newNode);
+            tf::Quaternion q;
+            q.setRPY(0, 0, initial_angle);
+            transform.setRotation(q);
+            //("novy uhol %f", initial_angle);
+            //}
 
-        ROS_WARN("novy uhol %f", initial_angle);
+            osm.publishPoint(lastPoint.latitude, lastPoint.longitude, Parser::TARGET_POSITION_MARKER, last_cov);
+
+            lastPoint.latitude = msg->latitude;
+            lastPoint.longitude = msg->longitude;
+            last_cov = cov;
+        }
+    }
+
+    double Planner::getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps){
+
+        double sum = 0;
+        for (double cov: gps->position_covariance){
+            sum += pow(cov, 2.0);
+        }
+        return sqrt(sum);
     }
 
     double Planner::checkDistance(int node_id, double lat, double lon) {

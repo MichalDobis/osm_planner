@@ -96,86 +96,58 @@ namespace osm_planner {
         createNetwork();
     }
 
-    void Parser::publishPoint(double latitude, double longitude, int marker_type) {
+    void Parser::publishPoint(geometry_msgs::Point point, int marker_type, double radius) {
 
         if (!visualization)
             return;
 
-        geometry_msgs::Point point;
         point.z = 0;
+
+        switch (marker_type) {
+
+            case CURRENT_POSITION_MARKER:
+                position_marker.points.clear();
+                position_marker.scale.x = radius;
+                position_marker.scale.y = radius;
+                position_marker.pose.position = point;
+                position_marker_pub.publish(position_marker);
+                break;
+
+            case TARGET_POSITION_MARKER:
+                target_marker.points.clear();
+                target_marker.scale.x = radius;
+                target_marker.scale.y = radius;
+                target_marker.pose.position = point;
+                target_marker_pub.publish(target_marker);
+                break;
+            default:
+                break;
+        }
+    }
+
+    void Parser::publishPoint(double latitude, double longitude, int marker_type, double radius) {
+
+        geometry_msgs::Point point;
         point.x = 0;
         point.y = 0;
 
         point.x = Haversine::getCoordinateX(startPoint.longitude, longitude, startPoint.latitude, latitude);
         point.y = Haversine::getCoordinateY(startPoint.latitude, latitude);
 
-        switch (marker_type) {
-            case CURRENT_POSITION_MARKER:
-                position_marker.points.clear();
-                position_marker.points.push_back(point);
-                position_marker_pub.publish(position_marker);
-                break;
-            case TARGET_POSITION_MARKER:
-                target_marker.points.clear();
-                target_marker.points.push_back(point);
-                target_marker_pub.publish(target_marker);
-                break;
-            default:
-                break;
-        }
-    }
-
-    void Parser::publishPoint(geometry_msgs::Point point, int marker_type) {
-
-        if (!visualization)
-            return;
-
-        point.z = 0;
-
-        switch (marker_type) {
-            case CURRENT_POSITION_MARKER:
-                position_marker.points.clear();
-                position_marker.points.push_back(point);
-                position_marker_pub.publish(position_marker);
-                break;
-            case TARGET_POSITION_MARKER:
-                target_marker.points.clear();
-                target_marker.points.push_back(point);
-                target_marker_pub.publish(target_marker);
-                break;
-            default:
-                break;
-        }
+        publishPoint(point, marker_type, radius);
     }
 
 
-    void Parser::publishPoint(int pointID, int marker_type) {
-
-        if (!visualization)
-            return;
+    void Parser::publishPoint(int pointID, int marker_type, double radius) {
 
         geometry_msgs::Point point;
-        point.z = 0;
         point.x = 0;
         point.y = 0;
 
         point.x = Haversine::getCoordinateX(startPoint, nodes[pointID]);
         point.y = Haversine::getCoordinateY(startPoint, nodes[pointID]);
 
-        switch (marker_type) {
-            case CURRENT_POSITION_MARKER:
-                position_marker.points.clear();
-                position_marker.points.push_back(point);
-                position_marker_pub.publish(position_marker);
-                break;
-            case TARGET_POSITION_MARKER:
-                target_marker.points.clear();
-                target_marker.points.push_back(point);
-                target_marker_pub.publish(target_marker);
-                break;
-            default:
-                break;
-        }
+        publishPoint(point, marker_type, radius);
 
     }
 
@@ -372,34 +344,17 @@ namespace osm_planner {
         if (!visualization)
             return;
 
-        visualization_msgs::Marker line_strip, line_list;
-
-        position_marker.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = map_frame;
-        position_marker.header.stamp = line_strip.header.stamp = line_list.header.stamp = ros::Time::now();
-        position_marker.ns = line_strip.ns = line_list.ns = "work_space";
-        position_marker.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;
-        position_marker.pose.orientation.w = line_strip.pose.orientation.w = line_list.pose.orientation.w = 1.0;
+        position_marker.header.frame_id = map_frame;
+        position_marker.header.stamp =  ros::Time::now();
+        position_marker.ns =  "work_space";
+        position_marker.action = visualization_msgs::Marker::ADD;
+        position_marker.pose.orientation.w = 1.0;
 
         position_marker.id = 0;
-        line_list.id = 2;
 
-        position_marker.type = visualization_msgs::Marker::POINTS;
-        line_list.type = visualization_msgs::Marker::ARROW;
+        position_marker.type = visualization_msgs::Marker::CYLINDER;
 
-        line_list.scale.x = 2.0;
-        line_list.scale.y = 2.0;
-        line_list.scale.z = 2.0;
-
-        line_list.color.r = 1.0f;
-        line_list.color.g = 0.0f;
-        line_list.color.b = 0.0f;
-        line_list.color.a = 1.0;
-
-        line_list.lifetime = ros::Duration(100);
-
-        position_marker.scale.x = 2.0;
-        position_marker.scale.y = 2.0;
-        position_marker.scale.z = 2.0;
+        position_marker.scale.z = 0.05;
 
         position_marker.lifetime = ros::Duration(100);
 
@@ -407,12 +362,11 @@ namespace osm_planner {
         position_marker.color.r = 1.0f;
         position_marker.color.g = 1.0f;
         position_marker.color.b = 0.0f;
-        position_marker.color.a = 1.0;
+        position_marker.color.a = 0.5;
 
         target_marker = position_marker;
         //red marker
         target_marker.color.g = 0.0f;
-
    }
 
 //parse all ways in osm maps if osm_key = "null"
@@ -749,7 +703,9 @@ namespace osm_planner {
         return node1.latitude < node2.latitude ? dist : -dist;
     }
 
-    double Parser::Haversine::getBearing(Parser::OSM_NODE node1, Parser::OSM_NODE node2) {
+
+
+    template<class N1, class N2> double Parser::Haversine::getBearing(N1 const& node1, N2 const& node2) {
 
         /*   Haversine formula:
          *   a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
@@ -765,6 +721,8 @@ namespace osm_planner {
         double y = sin(dLon) * cos(node2.latitude * DEG2RAD);
         double x = cos(node1.latitude * DEG2RAD) * sin(node2.latitude * DEG2RAD) -
                    sin(node1.latitude * DEG2RAD) * cos(node2.latitude * DEG2RAD) * cos(dLon);
-        return atan2(y, x) * RAD2DEG;
+        return atan2(y, x);
     }
 }
+
+

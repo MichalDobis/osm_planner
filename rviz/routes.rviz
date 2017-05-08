@@ -99,7 +99,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /move_base/target_marker
+      Marker Topic: /move_base/position_marker
       Name: Marker
       Namespaces:
         {}
@@ -142,8 +142,6 @@ Visualization Manager:
         All Enabled: true
         base_link:
           Value: true
-        local_map:
-          Value: true
         map:
           Value: true
       Marker Scale: 1
@@ -154,8 +152,6 @@ Visualization Manager:
       Tree:
         map:
           base_link:
-            {}
-          local_map:
             {}
       Update Interval: 0
       Value: true

@@ -11,16 +11,30 @@
 #include <visualization_msgs/Marker.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
-
+#include <sensor_msgs/NavSatFix.h>
 
 namespace osm_planner {
 
     class Parser {
     public:
 
+        template <class T1>
+        struct MyStruct{
+           double latitude;
+            double longitude;
+
+        };
+
+        typedef struct kkt {
+            double latitude;
+            double longitude;
+            double angle;
+        } KKT;
+
         typedef struct osm_node {
             double latitude;
             double longitude;
+            double angle;
         } OSM_NODE;
 
         typedef struct osm_node_with_id {
@@ -49,11 +63,11 @@ namespace osm_planner {
         void parse();
 
         //publishing functions
-        void publishPoint(int pointID, int marker_type);
+        void publishPoint(int pointID, int marker_type, double radius);
 
-        void publishPoint(geometry_msgs::Point point, int marker_type);
+        void publishPoint(geometry_msgs::Point point, int marker_type, double radius);
 
-        void publishPoint(double latitude, double longitude, int marker_type);
+        void publishPoint(double latitude, double longitude, int marker_type, double radius);
 
         void publishRouteNetwork();
 
@@ -92,12 +106,14 @@ namespace osm_planner {
 
             static double getCoordinateY(Parser::OSM_NODE node1, Parser::OSM_NODE node2);
 
-            static double getBearing(Parser::OSM_NODE node1, Parser::OSM_NODE node2);
+           // static double getBearing(Parser::OSM_NODE node1, Parser::OSM_NODE node2);
+
+            template<class N1, class N2> static double getBearing(N1 const& node1, N2 const& node2);
 
         private:
-            const static double R = 6371e3;
-            const static double DEG2RAD = M_PI / 180;
-            const static double RAD2DEG = 180 / M_PI;
+            constexpr static double R = 6371e3;
+            constexpr static double DEG2RAD = M_PI / 180;
+            constexpr static double RAD2DEG = 180 / M_PI;
         };
 
     private:

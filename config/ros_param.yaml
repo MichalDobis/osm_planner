@@ -1,10 +1,16 @@
+#names of frames
 global_frame: "map"
-local_map_frame: "local_map"
+local_map_frame: "local_map"    #Frame has usage, when param update_rotation is true
 robot_base_frame: "base_link"
+
+#names of topics
 topic_shortest_path: "shortest_path"
-topic_gps_name: "fix"
-use_tf: false
-interpolation_max_distance: 2.0 #Max distance between two nodes of oriented graph
-filter_of_ways: ["all"]
-visualization: true
-set_random_pose: true
+topic_gps_name: "/fix"
+
+use_tf: false                   # Use tf to update current pose
+interpolation_max_distance: 2.0 # Max distance between two nodes of orientated graph
+filter_of_ways: ["all"]         # Filter for parser. Parse only routes, which have value on the list
+                                # If value is all, then parse all routes
+visualization: true             # Enable/Disable publishing to paths and visualizations topics
+set_random_pose: false          # Set the random pose in a map at initialization (DEBUG param)
+update_rotation: true           # If value is true, then use gps to calculate rotation

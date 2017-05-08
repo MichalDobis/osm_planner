@@ -54,7 +54,7 @@ namespace osm_planner {
 
         //update pose
         bool updatePoseFromTF(); //from tf
-        void setPositionFromGPS(double lat, double lon);        //from gps
+        void setPositionFromGPS(double lat, double lon, double accuracy);        //from gps
         void setPositionFromOdom(geometry_msgs::Point point);  //from odom
 
     private:
@@ -70,6 +70,7 @@ namespace osm_planner {
 
         //global ros parameters
         bool use_tf;
+        bool update_rotation;
         std::string map_frame, base_link_frame, local_map_frame;
         double interpolation_max_distance;
 
@@ -98,7 +99,7 @@ namespace osm_planner {
 
         double checkDistance(int node_id, double lat, double lon);
         double checkDistance(int node_id, geometry_msgs::Pose pose);
-
+        double getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps);
         //tf broadcaster thread
         double initial_angle;
         boost::shared_ptr<boost::thread> tfThread;
