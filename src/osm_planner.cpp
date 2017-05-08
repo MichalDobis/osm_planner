@@ -421,35 +421,32 @@ namespace osm_planner {
         if (!initialized_position)
             return;
 
-        static Parser::OSM_NODE lastPoint = osm.getStartPoint();
-        Parser::OSM_NODE newNode;
-
-        newNode.latitude = msg->latitude;
-        newNode.longitude = msg->longitude;
-
         double cov = getAccuracy(msg);
-        ROS_WARN("cov %f", cov);
-
-        static double last_cov = 1000;
 
         //todo - dorobit citanie gps vzhladom na frame
         setPositionFromGPS(msg->latitude, msg->longitude, cov);
 
-//        if (Parser::Haversine::getDistance(lastPoint, newNode) > 5.0) {
-
         if (update_rotation) {
-            initial_angle = Parser::Haversine::getBearing(lastPoint, newNode);
-            tf::Quaternion q;
-            q.setRPY(0, 0, initial_angle);
-            transform.setRotation(q);
-            //("novy uhol %f", initial_angle);
-            //}
 
+            static Parser::OSM_NODE lastPoint = osm.getStartPoint();
+            static double last_cov = 0;
+
+            Parser::OSM_NODE newPoint;
+            newPoint.latitude = msg->latitude;
+            newPoint.longitude = msg->longitude;
+
+            if (Parser::Haversine::getDistance(lastPoint, newPoint) > cov + last_cov) {
+
+                initial_angle = Parser::Haversine::getBearing(lastPoint, newPoint);
+                tf::Quaternion q;
+                q.setRPY(0, 0, initial_angle);
+                transform.setRotation(q);
+
+                lastPoint.latitude = msg->latitude;
+                lastPoint.longitude = msg->longitude;
+                last_cov = cov;
+            }
             osm.publishPoint(lastPoint.latitude, lastPoint.longitude, Parser::TARGET_POSITION_MARKER, last_cov);
-
-            lastPoint.latitude = msg->latitude;
-            lastPoint.longitude = msg->longitude;
-            last_cov = cov;
         }
     }
 
