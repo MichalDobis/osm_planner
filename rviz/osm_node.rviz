@@ -72,7 +72,7 @@ Visualization Manager:
       Radius: 0.03
       Shaft Diameter: 0.1
       Shaft Length: 0.1
-      Topic: /osm_planner_node/route_network
+      Topic: /move_base/osm/route_network
       Unreliable: false
       Value: true
     - Alpha: 1
@@ -94,12 +94,12 @@ Visualization Manager:
       Radius: 0.03
       Shaft Diameter: 0.1
       Shaft Length: 0.1
-      Topic: /osm_planner_node/shortest_path
+      Topic: /move_base/osm/shortest_path
       Unreliable: false
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /osm_planner_node/position_marker
+      Marker Topic: /move_base/osm/position_marker
       Name: Marker
       Namespaces:
         {}
@@ -107,7 +107,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /osm_planner_node/target_marker
+      Marker Topic: /move_base/osm/target_marker
       Name: Marker
       Namespaces:
         {}
@@ -132,7 +132,7 @@ Visualization Manager:
       Radius: 0.03
       Shaft Diameter: 0.1
       Shaft Length: 0.1
-      Topic: /osm_planner_node/refused_path
+      Topic: /move_base/osm/refused_path
       Unreliable: false
       Value: true
     - Class: rviz/TF
@@ -140,13 +140,132 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
+        base_end_point:
+          Value: true
+        base_link:
+          Value: true
+        base_stabilized:
+          Value: true
+        camera:
+          Value: true
+        camera_l:
+          Value: true
+        camera_r:
+          Value: true
+        imu:
+          Value: true
+        laser:
+          Value: true
+        link_1_2:
+          Value: true
+        link_2_3:
+          Value: true
+        link_3_4:
+          Value: true
+        link_3_4x:
+          Value: true
+        map:
+          Value: true
+        menic1_2:
+          Value: true
+        menic4_5:
+          Value: true
+        model_joint_1:
+          Value: true
+        model_joint_2:
+          Value: true
+        model_joint_3:
+          Value: true
+        model_joint_4:
+          Value: true
+        model_joint_5:
+          Value: true
+        model_joint_6:
+          Value: true
+        odom:
+          Value: true
+        tool_point:
+          Value: true
+        uchopenie_lavo:
+          Value: true
+        uchopenie_pravo:
+          Value: true
+        veza:
+          Value: true
+        wheel_frame_l:
+          Value: true
+        wheel_frame_l_rotation:
+          Value: true
+        wheel_frame_r:
+          Value: true
+        wheel_frame_r_rotation:
+          Value: true
+        wheel_lp:
+          Value: true
+        wheel_lz:
+          Value: true
+        wheel_pp:
+          Value: true
+        wheel_pz:
+          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        map:
+          odom:
+            base_link:
+              base_stabilized:
+                base_end_point:
+                  model_joint_1:
+                    model_joint_2:
+                      link_1_2:
+                        {}
+                      menic1_2:
+                        {}
+                      model_joint_3:
+                        link_2_3:
+                          {}
+                        model_joint_4:
+                          link_3_4:
+                            {}
+                          link_3_4x:
+                            {}
+                          model_joint_5:
+                            menic4_5:
+                              {}
+                            model_joint_6:
+                              tool_point:
+                                {}
+                              uchopenie_lavo:
+                                {}
+                              uchopenie_pravo:
+                                {}
+                imu:
+                  {}
+                laser:
+                  veza:
+                    camera_l:
+                      {}
+                    camera_r:
+                      camera:
+                        {}
+                wheel_frame_l:
+                  wheel_frame_l_rotation:
+                    {}
+                  wheel_lp:
+                    {}
+                  wheel_lz:
+                    {}
+                wheel_frame_r:
+                  wheel_frame_r_rotation:
+                    {}
+                  wheel_pp:
+                    {}
+                  wheel_pz:
+                    {}
       Update Interval: 0
       Value: true
   Enabled: true

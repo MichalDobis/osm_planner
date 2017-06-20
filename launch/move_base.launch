@@ -9,8 +9,6 @@
         <arg name="filepath" value="$(arg filepath)"/>
     </include>
 
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find osm_planner)/rviz/routes.rviz" required="true"/>
-
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
      <param name="base_global_planner" value="osm_planner/Planner"/>
  <param name="controller_frequency" value="10"/>
@@ -21,6 +19,6 @@
   </node>
 
   <node name="navigation_example" pkg="osm_planner" type="navigation_example" ns="move_base"/>
-  <rosparam command="load" file="$(find osm_planner)/test/test_fei.yaml"/>
+  <!--rosparam command="load" file="$(find osm_planner)/test/test_fei.yaml"/-->
 
 </launch>

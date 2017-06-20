@@ -47,7 +47,7 @@ namespace osm_planner {
 
         if (!initialized_ros) {
             //init ros topics and services
-            ros::NodeHandle n("~");
+            ros::NodeHandle n("~/osm");
 
             //source of map
             std::string file = "skuska.osm";
@@ -431,13 +431,9 @@ namespace osm_planner {
             static Parser::OSM_NODE lastPoint = osm.getStartPoint();
             static double last_cov = 0;
 
-            Parser::OSM_NODE newPoint;
-            newPoint.latitude = msg->latitude;
-            newPoint.longitude = msg->longitude;
+            if (Parser::Haversine::getDistance(lastPoint, *msg) > cov + last_cov) {
 
-            if (Parser::Haversine::getDistance(lastPoint, newPoint) > cov + last_cov) {
-
-                initial_angle = Parser::Haversine::getBearing(lastPoint, newPoint);
+                initial_angle = Parser::Haversine::getBearing(lastPoint, *msg);
                 tf::Quaternion q;
                 q.setRPY(0, 0, initial_angle);
                 transform.setRotation(q);
