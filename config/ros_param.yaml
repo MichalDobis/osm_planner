@@ -11,7 +11,7 @@ osm:
 
  use_tf: false                   # Use tf to update current pose
  interpolation_max_distance: 2.0 # Max distance between two nodes of orientated graph
- filter_of_ways: ["all"]         # Filter for parser. Parse only routes, which have value on the list
+ filter_of_ways: ["footway"]         # Filter for parser. Parse only routes, which have value on the list
                                 # If value is all, then parse all routes
  visualization: true             # Enable/Disable publishing to paths and visualizations topics
  set_random_pose: false          # Set the random pose in a map at initialization (DEBUG param)

@@ -2,7 +2,7 @@
 <launch>
   <master auto="start"/>
 
-    <arg name="filepath" default="$(find osm_planner)/osm_example/fei.osm"/>
+    <arg name="filepath" default="$(find osm_planner)/osm_example/sad_janka_krala.osm"/>
 
     <include file="$(find osm_planner)/launch/planner_setup.launch" ns="move_base">
         <!--Defining this arg is necessary to change file path -->

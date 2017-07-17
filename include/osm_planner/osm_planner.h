@@ -76,7 +76,7 @@ namespace osm_planner {
 
         /*Publisher*/
         ros::Publisher shortest_path_pub;
-        ros::Publisher utm_init_pub;
+     //   ros::Publisher utm_init_pub;
 
         /* Subscribers */
         ros::Subscriber gps_sub;

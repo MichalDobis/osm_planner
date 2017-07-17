@@ -76,7 +76,7 @@ namespace osm_planner {
 
             //publishers
             shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
-            utm_init_pub = n.advertise<sensor_msgs::NavSatFix>("/utm/init", 10);
+          //  utm_init_pub = n.advertise<sensor_msgs::NavSatFix>("/utm/init", 10);
 
             //services
             init_service = n.advertiseService("init", &Planner::initCallback, this);
@@ -411,7 +411,7 @@ namespace osm_planner {
         fix.longitude = req.longitude;
 
         fix.header.frame_id = base_link_frame;
-        utm_init_pub.publish(fix);
+//        utm_init_pub.publish(fix);
 
         return true;
     }
