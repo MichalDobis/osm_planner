@@ -131,8 +131,13 @@ namespace osm_planner {
         point.x = 0;
         point.y = 0;
 
-        point.x = Haversine::getCoordinateX(startPoint.longitude, longitude, startPoint.latitude, latitude);
-        point.y = Haversine::getCoordinateY(startPoint.latitude, latitude);
+        OSM_NODE node;
+
+        node.longitude =longitude;
+        node.latitude = latitude;
+
+        point.x = haversine.getCoordinateX(node);
+        point.y = haversine.getCoordinateY(node);
 
         publishPoint(point, marker_type, radius);
     }
@@ -144,8 +149,8 @@ namespace osm_planner {
         point.x = 0;
         point.y = 0;
 
-        point.x = Haversine::getCoordinateX(startPoint, nodes[pointID]);
-        point.y = Haversine::getCoordinateY(startPoint, nodes[pointID]);
+        point.x = haversine.getCoordinateX(nodes[pointID]);
+        point.y = haversine.getCoordinateY(nodes[pointID]);
 
         publishPoint(point, marker_type, radius);
 
@@ -170,8 +175,8 @@ namespace osm_planner {
 
             for (int j = 0; j < ways[i].nodesId.size(); j++) {
 
-                pose.pose.position.x = Haversine::getCoordinateX(startPoint, nodes[ways[i].nodesId[j]]);
-                pose.pose.position.y = Haversine::getCoordinateY(startPoint, nodes[ways[i].nodesId[j]]);
+                pose.pose.position.x = haversine.getCoordinateX(nodes[ways[i].nodesId[j]]);
+                pose.pose.position.y = haversine.getCoordinateY(nodes[ways[i].nodesId[j]]);
                 path.poses.push_back(pose);
 
             }
@@ -199,8 +204,8 @@ namespace osm_planner {
 
         for (int i = 0; i < nodesInPath.size(); i++) {
 
-            pose.pose.position.x = Haversine::getCoordinateX(startPoint, nodes[nodesInPath[i]]);
-            pose.pose.position.y = Haversine::getCoordinateY(startPoint, nodes[nodesInPath[i]]);
+            pose.pose.position.x = haversine.getCoordinateX(nodes[nodesInPath[i]]);
+            pose.pose.position.y = haversine.getCoordinateY(nodes[nodesInPath[i]]);
             refused_path.poses.push_back(pose);
         }
 
@@ -243,9 +248,9 @@ namespace osm_planner {
         for (int i = 0; i < nodesInPath.size(); i++) {
 
             pose.header.stamp = ros::Time::now();
-            pose.pose.position.x = Haversine::getCoordinateX(startPoint, nodes[nodesInPath[i]]);
-            pose.pose.position.y = Haversine::getCoordinateY(startPoint, nodes[nodesInPath[i]]);
-            double yaw = Haversine::getBearing(startPoint, nodes[nodesInPath[i]]);
+            pose.pose.position.x = haversine.getCoordinateX(nodes[nodesInPath[i]]);
+            pose.pose.position.y = haversine.getCoordinateY(nodes[nodesInPath[i]]);
+            double yaw = haversine.getBearing(nodes[nodesInPath[i]]);
 
             pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
             pose.header.seq = i;
@@ -283,13 +288,13 @@ namespace osm_planner {
 
         int id = 0;
 
-        double x = Haversine::getCoordinateX(startPoint, nodes[0]);
-        double y = Haversine::getCoordinateY(startPoint, nodes[0]);
+        double x = haversine.getCoordinateX(nodes[0]);
+        double y = haversine.getCoordinateY(nodes[0]);
         double minDistance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
 
         for (int i = 0; i < nodes.size(); i++) {
-            x = Haversine::getCoordinateX(startPoint, nodes[i]);
-            y = Haversine::getCoordinateY(startPoint, nodes[i]);
+            x = haversine.getCoordinateX(nodes[i]);
+            y = haversine.getCoordinateY(nodes[i]);
 
 
             double distance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
@@ -302,9 +307,12 @@ namespace osm_planner {
         return id;
     }
 
-    Parser::OSM_NODE Parser::getStartPoint() {
-        return startPoint;
+    //get distance and bearing calculator
+    Parser::Haversine *Parser::getCalculator(){
+
+        return &haversine;
     }
+
 //return OSM NODE, which contains geographics coordinates
    Parser::OSM_NODE Parser::getNodeByID(int id) {
 
@@ -313,19 +321,19 @@ namespace osm_planner {
 
     /* SETTERS */
 
-   void Parser::setStartPoint(double latitude, double longitude) {
+   void Parser::setStartPoint(double latitude, double longitude, double bearing) {
 
-        this->startPoint.latitude = latitude;
-        this->startPoint.longitude = longitude;
+        haversine.setOrigin(latitude, longitude);
+        haversine.setOffset(bearing);
    }
 
+    //set random start pose
    void Parser::setStartPoint(){
 
        int id =  (int) (((double)rand() / RAND_MAX) * size_of_nodes);
-
-        this->startPoint.latitude = nodes[id].latitude;
-        this->startPoint.longitude = nodes[id].longitude;
+       haversine.setOrigin(nodes[id].latitude, nodes[id].longitude);
    }
+
    void Parser::setNewMap(std::string xml) {
 
         this->xml = xml;

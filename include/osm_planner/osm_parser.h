@@ -18,19 +18,6 @@ namespace osm_planner {
     class Parser {
     public:
 
-        template <class T1>
-        struct MyStruct{
-           double latitude;
-            double longitude;
-
-        };
-
-        typedef struct kkt {
-            double latitude;
-            double longitude;
-            double angle;
-        } KKT;
-
         typedef struct osm_node {
             double latitude;
             double longitude;
@@ -82,20 +69,34 @@ namespace osm_planner {
         int getNearestPointXY(double point_x, double point_y); //return OSM node ID
         OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
         nav_msgs::Path getPath(std::vector<int> nodesInPath); //get the XY coordinates from vector of IDs
-        OSM_NODE getStartPoint();
 
         //SETTERS
-        void setStartPoint(double latitude, double longitude); //set the zero point in cartezian coordinates
+        void setStartPoint(double latitude, double longitude, double bearing); //set the zero point in cartezian coordinates
         void setStartPoint();
         void setNewMap(std::string xml);
 
         void setInterpolationMaxDistance(double param);
+
+
 
         //Embedded class for calculating distance and bearing
         //Functions was inspired by: http://www.movable-type.co.uk/scripts/latlong.html
         class Haversine {
 
         public:
+
+            Haversine(): offset(0){}
+            Haversine(double bearing): offset(bearing){}
+
+            void setOffset(double offset){ this->offset = offset;}
+
+            void setOrigin(double latitude, double longitude){
+
+                originPoint.latitude = latitude;
+                originPoint.longitude = longitude;
+            }
+
+            OSM_NODE getOrigin() {return originPoint;}
 
             template<class N1, class N2>static double getDistance(N1 node1, N2 node2){
 
@@ -117,58 +118,16 @@ namespace osm_planner {
                 return R * c;
             };
 
-            static double getCoordinateX(double lon1, double lon2, double lat1, double lat2){
-
-                double dLon = lon2 * DEG2RAD - lon1 * DEG2RAD;
-                double latAverage = (lat1 + lat2) / 2;
-                double a = cos(latAverage * DEG2RAD) * cos(latAverage * DEG2RAD) *
-                           sin(dLon / 2) * sin(dLon / 2);
-                double dist = R * 2 * atan2(sqrt(a), sqrt(1 - a));
-
-                return lon1 < lon2 ? dist : -dist;
-            }
-
-            template<class N1, class N2> static double getCoordinateX(N1 node1, N2 node2){
-
-                double dLon = node2.longitude * DEG2RAD - node1.longitude * DEG2RAD;
-                double latAverage = (node1.latitude + node2.latitude) / 2;
-                double a = cos(latAverage * DEG2RAD) * cos(latAverage * DEG2RAD) *
-                           sin(dLon / 2) * sin(dLon / 2);
-                double dist = R * 2 * atan2(sqrt(a), sqrt(1 - a));
-
-                return node1.longitude < node2.longitude ? dist : -dist;
-            };
-
-            static double getCoordinateY(double lat1, double lat2){
-
-                static double R = 6371e3;
-                double dLat = lat2 * DEG2RAD - lat1 * DEG2RAD;
-                double a = sin(dLat / 2) * sin(dLat / 2);
-                double dist = R * 2 * atan2(sqrt(a), sqrt(1 - a));
-
-                return lat1 < lat2 ? dist : -dist;
-            }
-
-            template<class N1, class N2> static double getCoordinateY(N1 node1, N2 node2){
-
-                static double R = 6371e3;
-                double dLat = node2.latitude * DEG2RAD - node1.latitude * DEG2RAD;
-                double a = sin(dLat / 2) * sin(dLat / 2);
-                double dist = R * 2 * atan2(sqrt(a), sqrt(1 - a));
-
-                return node1.latitude < node2.latitude ? dist : -dist;
-            };
-
             template<class N1, class N2> static double getBearing(N1 node1, N2 node2){
 
-              /*   Haversine formula:
-              *   a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
-              *   c = 2 ⋅ atan2( √a, √(1−a) )
-              *   d = R ⋅ c
-              *
-              *  φ - latitude;
-              *  λ - longitude;
-              */
+                /*   Haversine formula:
+                *   a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
+                *   c = 2 ⋅ atan2( √a, √(1−a) )
+                *   d = R ⋅ c
+                *
+                *  φ - latitude;
+                *  λ - longitude;
+                */
 
                 double dLon = node2.longitude * DEG2RAD - node1.longitude * DEG2RAD;
 
@@ -178,13 +137,72 @@ namespace osm_planner {
                 return atan2(y, x);
             };
 
+            template<class N> double getBearing(N node){
+
+                /*   Haversine formula:
+                *   a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
+                *   c = 2 ⋅ atan2( √a, √(1−a) )
+                *   d = R ⋅ c
+                *
+                *  φ - latitude;
+                *  λ - longitude;
+                */
+
+                double dLon = node.longitude * DEG2RAD - originPoint.longitude * DEG2RAD;
+
+                double y = sin(dLon) * cos(node.latitude * DEG2RAD);
+                double x = cos(originPoint.latitude * DEG2RAD) * sin(node.latitude * DEG2RAD) -
+                           sin(originPoint.latitude * DEG2RAD) * cos(node.latitude * DEG2RAD) * cos(dLon);
+                return atan2(y, x);
+            };
+
+
+            template<class N>  double getCoordinateX(N node){
+
+              /*  double dLon = node2.longitude * DEG2RAD - node1.longitude * DEG2RAD;
+                double latAverage = (node1.latitude + node2.latitude) / 2;
+                double a = cos(latAverage * DEG2RAD) * cos(latAverage * DEG2RAD) *
+                           sin(dLon / 2) * sin(dLon / 2);
+                double dist = R * 2 * atan2(sqrt(a), sqrt(1 - a));
+
+                return node1.longitude < node2.longitude ? dist : -dist;*/
+
+              double dist = getDistance(originPoint, node);
+              double bearing  = getBearing(originPoint, node);
+              return sin(bearing + offset)*dist;
+
+            };
+
+            template<class N> double getCoordinateY(N node){
+
+                /*static double R = 6371e3;
+                double dLat = node2.latitude * DEG2RAD - node1.latitude * DEG2RAD;
+                double a = sin(dLat / 2) * sin(dLat / 2);
+                double dist = R * 2 * atan2(sqrt(a), sqrt(1 - a));
+
+                return node1.latitude < node2.latitude ? dist : -dist;*/
+
+                double dist = getDistance(originPoint, node);
+                double bearing  = getBearing(originPoint, node);
+                return cos(bearing + offset)*dist;
+            };
+
         private:
+            double offset;
+            OSM_NODE originPoint;
             constexpr static double R = 6371e3;
             constexpr static double DEG2RAD = M_PI / 180;
             constexpr static double RAD2DEG = 180 / M_PI;
         };
 
+
+        Haversine *getCalculator();         //get Distance and bearing calculator
+
+
     private:
+
+        //distance and bearing calculator
+        Haversine haversine;
 
         //map source
         std::string xml;

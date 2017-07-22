@@ -63,10 +63,10 @@ namespace osm_planner {
 
             //names of frames
             n.param<std::string>("global_frame", map_frame, "/map");
-            n.param<std::string>("local_map_frame", local_map_frame, "/rotated_map");
+            //n.param<std::string>("local_map_frame", local_map_frame, "/rotated_map");
             n.param<std::string>("robot_base_frame", base_link_frame, "/base_link");
             n.param<bool>("use_tf", use_tf, true);
-            n.param<bool>("update_rotation", update_rotation, true);
+            //n.param<bool>("update_rotation", update_rotation, true);
 
             std::string topic_gps_name;
             n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
@@ -166,9 +166,9 @@ namespace osm_planner {
         target.geoPoint.latitude = target_latitude;
         target.geoPoint.longitude = target_longitude;
         target.id = osm.getNearestPoint(target_latitude, target_longitude);
-        target.cartesianPoint.pose.position.x = Parser::Haversine::getCoordinateX(osm.getStartPoint(), target.geoPoint);
-        target.cartesianPoint.pose.position.y = Parser::Haversine::getCoordinateY(osm.getStartPoint(), target.geoPoint);
-        target.cartesianPoint.pose.orientation = tf::createQuaternionMsgFromYaw(Parser::Haversine::getBearing(osm.getStartPoint(), target.geoPoint));
+        target.cartesianPoint.pose.position.x =  osm.getCalculator()->getCoordinateX(target.geoPoint);
+        target.cartesianPoint.pose.position.y =  osm.getCalculator()->getCoordinateY(target.geoPoint);
+        target.cartesianPoint.pose.orientation = tf::createQuaternionMsgFromYaw( osm.getCalculator()->getBearing(target.geoPoint));
 
         //draw target point
         osm.publishPoint(target_latitude, target_longitude, Parser::TARGET_POSITION_MARKER, 5.0);
@@ -197,7 +197,7 @@ namespace osm_planner {
     void Planner::initializePos(double lat, double lon, double bearing) {
 
         osm.parse();
-        osm.setStartPoint(lat, lon);
+        osm.setStartPoint(lat, lon, bearing);
 
         //Save the position for path planning
         source.geoPoint.latitude = lat;
@@ -206,9 +206,9 @@ namespace osm_planner {
         source.cartesianPoint.pose.position.x = 0;
         source.cartesianPoint.pose.position.y = 0;
 
-        initial_angle = bearing;
-        tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&Planner::tfBroadcaster, this));
-        usleep(500000);
+       // initial_angle = bearing;
+       // tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&Planner::tfBroadcaster, this));
+       // usleep(500000);
         //checking distance to the nearest point
         double dist = checkDistance(source.id, lat, lon);
         if (dist > interpolation_max_distance)
@@ -232,7 +232,7 @@ namespace osm_planner {
         osm.setStartPoint();
 
         //Save the position for path planning
-        source.geoPoint = osm.getStartPoint();
+        source.geoPoint = osm.getCalculator()->getOrigin();
         source.id = 0;
         source.cartesianPoint.pose.position.x = 0;
         source.cartesianPoint.pose.position.y = 0;
@@ -360,9 +360,9 @@ namespace osm_planner {
         source.id = osm.getNearestPoint(lat, lon);
         source.geoPoint.latitude = lat;
         source.geoPoint.longitude = lon;
-        source.cartesianPoint.pose.position.x = Parser::Haversine::getCoordinateX(osm.getStartPoint(), source.geoPoint);
-        source.cartesianPoint.pose.position.y = Parser::Haversine::getCoordinateY(osm.getStartPoint(), source.geoPoint);
-        source.cartesianPoint.pose.orientation = tf::createQuaternionMsgFromYaw(Parser::Haversine::getBearing(osm.getStartPoint(), source.geoPoint));
+        source.cartesianPoint.pose.position.x = osm.getCalculator()->getCoordinateX(source.geoPoint);
+        source.cartesianPoint.pose.position.y = osm.getCalculator()->getCoordinateY(source.geoPoint);
+        source.cartesianPoint.pose.orientation = tf::createQuaternionMsgFromYaw(osm.getCalculator()->getBearing(source.geoPoint));
 
         osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER, accuracy);
 
@@ -426,9 +426,9 @@ namespace osm_planner {
         //todo - dorobit citanie gps vzhladom na frame
         setPositionFromGPS(msg->latitude, msg->longitude, cov);
 
-        if (update_rotation) {
+      /*  if (update_rotation) {
 
-            static Parser::OSM_NODE lastPoint = osm.getStartPoint();
+            static Parser::OSM_NODE lastPoint = osm.getCalculator()->getOrigin();
             static double last_cov = 0;
 
             if (Parser::Haversine::getDistance(lastPoint, *msg) > cov + last_cov) {
@@ -443,7 +443,7 @@ namespace osm_planner {
                 last_cov = cov;
             }
             osm.publishPoint(lastPoint.latitude, lastPoint.longitude, Parser::TARGET_POSITION_MARKER, last_cov);
-        }
+        }*/
     }
 
     double Planner::getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps){
@@ -468,13 +468,14 @@ namespace osm_planner {
 
         Parser::OSM_NODE node = osm.getNodeByID(node_id);
 
-        double x = Parser::Haversine::getCoordinateX(osm.getStartPoint(), node);
-        double y = Parser::Haversine::getCoordinateY(osm.getStartPoint(), node);
+
+        double x = osm.getCalculator()->getCoordinateX(node);
+        double y = osm.getCalculator()->getCoordinateY(node);
 
         return sqrt(pow(x - pose.position.x, 2.0) + pow(y - pose.position.y, 2.0));
     }
 
-    void Planner::tfBroadcaster(){
+  /*  void Planner::tfBroadcaster(){
 
         //inicialize TF broadcaster
         transform.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
@@ -489,6 +490,6 @@ namespace osm_planner {
             br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), map_frame, local_map_frame));
             rate.sleep();
         }
-    }
+    }*/
 }
 

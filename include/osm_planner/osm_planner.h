@@ -70,8 +70,8 @@ namespace osm_planner {
 
         //global ros parameters
         bool use_tf;
-        bool update_rotation;
-        std::string map_frame, base_link_frame, local_map_frame;
+      //  bool update_rotation;
+        std::string map_frame, base_link_frame;//, local_map_frame;
         double interpolation_max_distance;
 
         /*Publisher*/
@@ -88,10 +88,6 @@ namespace osm_planner {
         ros::ServiceServer init_service;
         ros::ServiceServer cancel_point_service;
 
-        /*tf broadcaster*/
-        tf::TransformBroadcaster br;
-        tf::Transform transform;
-
         //callbacks
         bool initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
         bool cancelPointCallback(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res);
@@ -100,9 +96,14 @@ namespace osm_planner {
         double checkDistance(int node_id, double lat, double lon);
         double checkDistance(int node_id, geometry_msgs::Pose pose);
         double getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps);
+
+        /*tf broadcaster*/
+        //tf::TransformBroadcaster br;
+        //tf::Transform transform;
+
         //tf broadcaster thread
-        double initial_angle;
-        boost::shared_ptr<boost::thread> tfThread;
-        void tfBroadcaster();
+    //    double initial_angle;
+      //  boost::shared_ptr<boost::thread> tfThread;
+      //  void tfBroadcaster();
     };
 }
