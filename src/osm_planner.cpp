@@ -76,6 +76,8 @@ namespace osm_planner {
 
             //publishers
             shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
+            gps_odom_pub = n.advertise<nav_msgs::Odometry>("gps_odom", 10);
+
           //  utm_init_pub = n.advertise<sensor_msgs::NavSatFix>("/utm/init", 10);
 
             //services
@@ -370,6 +372,46 @@ namespace osm_planner {
         double dist = checkDistance(source.id, lat, lon);
         if (dist > interpolation_max_distance)
             ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
+
+            nav_msgs::Odometry odom;
+            odom.header.stamp = ros::Time::now();
+
+
+            odom.header.frame_id = base_link_frame;
+
+            odom.child_frame_id = map_frame;
+
+            odom.pose.pose.position.x = source.cartesianPoint.pose.position.x;
+            odom.pose.pose.position.y = source.cartesianPoint.pose.position.y;
+            odom.pose.pose.position.z = 0;
+
+            odom.pose.pose.orientation.x = 0;
+            odom.pose.pose.orientation.y = 0;
+            odom.pose.pose.orientation.z = 0;
+            odom.pose.pose.orientation.w = 1;
+
+         /*   // Use ENU covariance to build XYZRPY covariance
+            boost::array<double, 36> covariance = {{
+                                                           fix->position_covariance[0],
+                                                           fix->position_covariance[1],
+                                                           fix->position_covariance[2],
+                                                           0, 0, 0,
+                                                           fix->position_covariance[3],
+                                                           fix->position_covariance[4],
+                                                           fix->position_covariance[5],
+                                                           0, 0, 0,
+                                                           fix->position_covariance[6],
+                                                           fix->position_covariance[7],
+                                                           fix->position_covariance[8],
+                                                           0, 0, 0,
+                                                           0, 0, 0, rot_cov, 0, 0,
+                                                           0, 0, 0, 0, rot_cov, 0,
+                                                           0, 0, 0, 0, 0, rot_cov
+                                                   }};
+
+            odom.pose.covariance = covariance;*/
+
+            gps_odom_pub.publish(odom);
     }
 
     void Planner::setPositionFromOdom(geometry_msgs::Point point) {
@@ -444,6 +486,9 @@ namespace osm_planner {
             }
             osm.publishPoint(lastPoint.latitude, lastPoint.longitude, Parser::TARGET_POSITION_MARKER, last_cov);
         }*/
+
+
+
     }
 
     double Planner::getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps){

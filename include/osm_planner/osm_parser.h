@@ -169,7 +169,7 @@ namespace osm_planner {
 
               double dist = getDistance(originPoint, node);
               double bearing  = getBearing(originPoint, node);
-              return sin(bearing + offset)*dist;
+              return cos(bearing + offset)*dist;
 
             };
 
@@ -184,7 +184,7 @@ namespace osm_planner {
 
                 double dist = getDistance(originPoint, node);
                 double bearing  = getBearing(originPoint, node);
-                return cos(bearing + offset)*dist;
+                return sin(bearing + offset)*dist;
             };
 
         private:

@@ -83,6 +83,7 @@ namespace osm_planner {
 
         //msgs for shortest path
         nav_msgs::Path path;
+        ros::Publisher gps_odom_pub; //debug topic - calculate odometry from gps
 
         /* Services */
         ros::ServiceServer init_service;
