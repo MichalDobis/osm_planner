@@ -70,9 +70,10 @@ namespace osm_planner {
 
         //global ros parameters
         bool use_tf;
-      //  bool update_rotation;
-        std::string map_frame, base_link_frame;//, local_map_frame;
+        bool update_origin_pose;
+        std::string map_frame, base_link_frame, local_map_frame;
         double interpolation_max_distance;
+        double footway_width;
 
         /*Publisher*/
         ros::Publisher shortest_path_pub;
@@ -98,13 +99,15 @@ namespace osm_planner {
         double checkDistance(int node_id, geometry_msgs::Pose pose);
         double getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps);
 
+        void improveOrigin(const sensor_msgs::NavSatFix::ConstPtr& gps);
+
         /*tf broadcaster*/
-        //tf::TransformBroadcaster br;
-        //tf::Transform transform;
+        tf::TransformBroadcaster br;
+        tf::Transform transform;
 
         //tf broadcaster thread
     //    double initial_angle;
-      //  boost::shared_ptr<boost::thread> tfThread;
-      //  void tfBroadcaster();
+        boost::shared_ptr<boost::thread> tfThread;
+        void tfBroadcaster();
     };
 }

@@ -63,10 +63,11 @@ namespace osm_planner {
 
             //names of frames
             n.param<std::string>("global_frame", map_frame, "/map");
-            //n.param<std::string>("local_map_frame", local_map_frame, "/rotated_map");
+            n.param<std::string>("local_map_frame", local_map_frame, "/rotated_map");
             n.param<std::string>("robot_base_frame", base_link_frame, "/base_link");
             n.param<bool>("use_tf", use_tf, true);
-            //n.param<bool>("update_rotation", update_rotation, true);
+            n.param<bool>("update_origin_pose", update_origin_pose, false);
+            n.param<double>("footway_width", footway_width, 0);
 
             std::string topic_gps_name;
             n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
@@ -209,8 +210,10 @@ namespace osm_planner {
         source.cartesianPoint.pose.position.y = 0;
 
        // initial_angle = bearing;
-       // tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&Planner::tfBroadcaster, this));
-       // usleep(500000);
+        if (update_origin_pose) {
+            tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&Planner::tfBroadcaster, this));
+            usleep(500000);
+        }
         //checking distance to the nearest point
         double dist = checkDistance(source.id, lat, lon);
         if (dist > interpolation_max_distance)
@@ -468,12 +471,19 @@ namespace osm_planner {
         //todo - dorobit citanie gps vzhladom na frame
         setPositionFromGPS(msg->latitude, msg->longitude, cov);
 
-      /*  if (update_rotation) {
+        if (update_origin_pose) {
 
-            static Parser::OSM_NODE lastPoint = osm.getCalculator()->getOrigin();
-            static double last_cov = 0;
+           // static Parser::OSM_NODE lastPoint = osm.getCalculator()->getOrigin();
+            static double last_cov = 100000;
 
-            if (Parser::Haversine::getDistance(lastPoint, *msg) > cov + last_cov) {
+            if (cov < last_cov){
+
+                improveOrigin(msg);
+                last_cov = cov;
+
+            }
+
+           /* if (Parser::Haversine::getDistance(lastPoint, *msg) > cov + last_cov) {
 
                 initial_angle = Parser::Haversine::getBearing(lastPoint, *msg);
                 tf::Quaternion q;
@@ -483,9 +493,10 @@ namespace osm_planner {
                 lastPoint.latitude = msg->latitude;
                 lastPoint.longitude = msg->longitude;
                 last_cov = cov;
-            }
-            osm.publishPoint(lastPoint.latitude, lastPoint.longitude, Parser::TARGET_POSITION_MARKER, last_cov);
-        }*/
+            }*/
+
+           // osm.publishPoint(lastPoint.latitude, lastPoint.longitude, Parser::TARGET_POSITION_MARKER, last_cov);
+        }
 
 
 
@@ -506,7 +517,7 @@ namespace osm_planner {
         Parser::OSM_NODE node2;
         node2.latitude = lat;
         node2.longitude = lon;
-        return Parser::Haversine::getDistance(node1, node2);
+        return Parser::Haversine::getDistance(node1, node2) - footway_width;
     }
 
     double Planner::checkDistance(int node_id, geometry_msgs::Pose pose) {
@@ -517,15 +528,35 @@ namespace osm_planner {
         double x = osm.getCalculator()->getCoordinateX(node);
         double y = osm.getCalculator()->getCoordinateY(node);
 
-        return sqrt(pow(x - pose.position.x, 2.0) + pow(y - pose.position.y, 2.0));
+        return sqrt(pow(x - pose.position.x, 2.0) + pow(y - pose.position.y, 2.0)) - footway_width;
     }
 
-  /*  void Planner::tfBroadcaster(){
+
+    void Planner::improveOrigin(const sensor_msgs::NavSatFix::ConstPtr& gps){
+
+        updatePoseFromTF();
+
+        double odom_x = source.cartesianPoint.pose.position.x;
+        double odom_y = source.cartesianPoint.pose.position.y;
+
+        double pose_from_origin_x = osm.getCalculator()->getCoordinateX(source.geoPoint);
+        double pose_from_origin_y = osm.getCalculator()->getCoordinateY(source.geoPoint);
+
+        double diff_x = pose_from_origin_x - odom_x;
+        double diff_y = pose_from_origin_y - odom_y;
+
+        ROS_WARN("improve origin pose x:%f y:%f", diff_x, diff_y);
+
+        transform.setOrigin(tf::Vector3(diff_x, diff_y, 0));
+
+    }
+
+    void Planner::tfBroadcaster(){
 
         //inicialize TF broadcaster
         transform.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
         tf::Quaternion q;
-        q.setRPY(0, 0, initial_angle);
+        q.setRPY(0, 0, 0);
         transform.setRotation(q);
 
         ros::Rate rate(10);
@@ -535,6 +566,6 @@ namespace osm_planner {
             br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), map_frame, local_map_frame));
             rate.sleep();
         }
-    }*/
+    }
 }
 
