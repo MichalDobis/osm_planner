@@ -72,6 +72,8 @@ namespace osm_planner {
             std::string topic_gps_name;
             n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
 
+            initFromGpsCallback = false;
+
             //subscribers
             gps_sub = n.subscribe(topic_gps_name, 1, &Planner::gpsCallback, this);
 
@@ -84,6 +86,7 @@ namespace osm_planner {
             //services
             init_service = n.advertiseService("init", &Planner::initCallback, this);
             cancel_point_service = n.advertiseService("cancel_point", &Planner::cancelPointCallback, this);
+            drawing_route_service = n.advertiseService("draw_route", &Planner::drawingRouteCallback, this);
 
             initialized_ros = true;
 
@@ -199,8 +202,14 @@ namespace osm_planner {
 
     void Planner::initializePos(double lat, double lon, double bearing) {
 
+        osm.getCalculator()->setOffset(bearing);
+        initializePos(lat, lon);
+    }
+
+    void Planner::initializePos(double lat, double lon) {
+
         osm.parse();
-        osm.setStartPoint(lat, lon, bearing);
+        osm.getCalculator()->setOrigin(lat, lon);
 
         //Save the position for path planning
         source.geoPoint.latitude = lat;
@@ -210,9 +219,9 @@ namespace osm_planner {
         source.cartesianPoint.pose.position.y = 0;
 
        // initial_angle = bearing;
-        if (update_origin_pose) {
-            tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&Planner::tfBroadcaster, this));
-            usleep(500000);
+        if (update_origin_pose && !tfThread != NULL) {
+              tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&Planner::tfBroadcaster, this));
+                usleep(500000);
         }
         //checking distance to the nearest point
         double dist = checkDistance(source.id, lat, lon);
@@ -448,21 +457,36 @@ namespace osm_planner {
 
     bool Planner::initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
-        initializePos(req.latitude, req.longitude, req.bearing);
+        //if longitude and latitude are incorrect then get initalize pose from gps topic
+        if (req.longitude <= 0 && req.latitude <= 0 ) {
+            initFromGpsCallback = true;
+            osm.getCalculator()->setOffset(req.bearing);
+        }
+        else
+            //If data is correct
+            initializePos(req.latitude, req.longitude, req.bearing);
 
-        sensor_msgs::NavSatFix fix;
+        return true;
+    }
 
-        fix.latitude = req.latitude;
-        fix.longitude = req.longitude;
+    bool Planner::drawingRouteCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
 
-        fix.header.frame_id = base_link_frame;
-//        utm_init_pub.publish(fix);
-
+        osm.publishRouteNetwork();
+        shortest_path_pub.publish(path);
         return true;
     }
 
     void Planner::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
 
+        //If is request for initiliaze pose from gps callback
+        if (initFromGpsCallback && msg->status.status != sensor_msgs::NavSatStatus::STATUS_NO_FIX) {
+
+            initFromGpsCallback = false;
+            initializePos(msg->latitude, msg->longitude);
+
+        }
+
+        //if pose no initialized then cancel callback
         if (!initialized_position)
             return;
 

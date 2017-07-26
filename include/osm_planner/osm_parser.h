@@ -6,11 +6,16 @@
 #define PROJECT_OSM_PARSER_H
 
 
+//parser
 #include <tinyxml.h>
+
+//ros and tf
 #include <ros/ros.h>
+#include <tf/transform_datatypes.h>
+
+//messages
 #include <visualization_msgs/Marker.h>
 #include <nav_msgs/Path.h>
-#include <tf/transform_datatypes.h>
 #include <sensor_msgs/NavSatFix.h>
 
 namespace osm_planner {
@@ -76,8 +81,6 @@ namespace osm_planner {
         void setNewMap(std::string xml);
 
         void setInterpolationMaxDistance(double param);
-
-
 
         //Embedded class for calculating distance and bearing
         //Functions was inspired by: http://www.movable-type.co.uk/scripts/latlong.html
@@ -217,7 +220,6 @@ namespace osm_planner {
         visualization_msgs::Marker position_marker, target_marker;
 
         std::string map_frame; //name of frame for msgs
-        bool visualization; //enable or disable publishing markers and paths for rviz visualization
 
         int size_of_nodes;  //usage in function getNodesInWay(), counter of currently read nodes
 
@@ -228,8 +230,7 @@ namespace osm_planner {
         std::vector<TRANSLATE_TABLE> table;
         std::vector<std::vector<float> > networkArray;
 
-        //start point - must be set and than you can publishing paths
-        OSM_NODE startPoint;
+       void initialize();
 
         void createMarkers();
 

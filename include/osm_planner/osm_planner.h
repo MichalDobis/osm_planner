@@ -5,6 +5,7 @@
 #include <osm_planner/cancelledPoint.h>
 #include <std_msgs/Int32.h>
 #include <std_srvs/Empty.h>
+#include <std_srvs/SetBool.h>
 #include <geometry_msgs/Point.h>
 #include <tf/tf.h>
 
@@ -44,6 +45,7 @@ namespace osm_planner {
 
         //Before start make plan, this function must be call
         void initializePos(double lat, double lon, double bearing);
+        void initializePos(double lat, double lon);
         void initializePos();
 
         //make plan from source to target
@@ -74,6 +76,7 @@ namespace osm_planner {
         std::string map_frame, base_link_frame, local_map_frame;
         double interpolation_max_distance;
         double footway_width;
+        bool initFromGpsCallback;
 
         /*Publisher*/
         ros::Publisher shortest_path_pub;
@@ -89,10 +92,12 @@ namespace osm_planner {
         /* Services */
         ros::ServiceServer init_service;
         ros::ServiceServer cancel_point_service;
+        ros::ServiceServer drawing_route_service;
 
         //callbacks
         bool initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
         bool cancelPointCallback(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res);
+        bool drawingRouteCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
         void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg);
 
         double checkDistance(int node_id, double lat, double lon);

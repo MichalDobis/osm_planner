@@ -13,7 +13,6 @@ osm:
  interpolation_max_distance: 2.0 # Max distance between two nodes of orientated graph
  filter_of_ways: ["all"]         # Filter for parser. Parse only routes, which have value on the list
                                 # If value is all, then parse all routes
- visualization: true             # Enable/Disable publishing to paths and visualizations topics
  set_random_pose: false          # Set the random pose in a map at initialization (DEBUG param)
- update_origin_pose: true          # If value is true, then when gps has better accurary improve origin pose
+ update_origin_pose: false          # If value is true, then when gps has better accurary improve origin pose
  footway_width: 2

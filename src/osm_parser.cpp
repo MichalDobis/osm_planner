@@ -9,50 +9,29 @@ namespace osm_planner {
 
     Parser::Parser() {
 
-        ros::NodeHandle n("~/osm");
-
-      //  std::string topic_name;
-
-        //get the parameters
-        n.param<std::string>("global_frame", map_frame, "/world");
-        n.param<bool>("visualization", visualization, false);
-
-        //publishers
-
-        if (visualization) {
-            //Publishers for visualization
-            position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
-            target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
-
-            path_pub = n.advertise<nav_msgs::Path>("route_network", 10);
-            refused_path_pub = n.advertise<nav_msgs::Path>("refused_path", 10);
-        }
-
-        createMarkers();
+      initialize();
     }
 
     Parser::Parser(std::string file) : xml(file) {
 
-        ros::NodeHandle n("~/osm");
+        initialize();
+    }
 
-        //std::string topic_name;
+   void Parser::initialize(){
+
+        ros::NodeHandle n("~/osm");
 
         //get the parameters
         n.param<std::string>("global_frame", map_frame, "/world");
-        n.param<bool>("/visualization", visualization, false);
 
-        //publishers
-      //  shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
+       //Publishers for visualization
+       position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
+       target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
 
-        if (visualization) {
-            //Publishers for visualization
-            position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
-            target_marker_pub = n.advertise<visualization_msgs::Marker>("target_marker", 1);
+       path_pub = n.advertise<nav_msgs::Path>("route_network", 10);
+       refused_path_pub = n.advertise<nav_msgs::Path>("refused_path", 10);
 
-            path_pub = n.advertise<nav_msgs::Path>("route_network", 10);
-            refused_path_pub = n.advertise<nav_msgs::Path>("refused_path", 10);
-        }
-        createMarkers();
+       createMarkers();
     }
 
     /**PUBLISHING FUNCTIONS**/
@@ -97,9 +76,6 @@ namespace osm_planner {
     }
 
     void Parser::publishPoint(geometry_msgs::Point point, int marker_type, double radius) {
-
-        if (!visualization)
-            return;
 
         point.z = 0;
 
@@ -159,9 +135,6 @@ namespace osm_planner {
 //publishing all paths
     void Parser::publishRouteNetwork() {
 
-        if (!visualization)
-            return;
-
         nav_msgs::Path path;
         path.header.frame_id = map_frame;
 
@@ -189,9 +162,6 @@ namespace osm_planner {
 
 //publishing defined path
     void Parser::publishRefusedPath(std::vector<int> nodesInPath) {
-
-        if (!visualization)
-            return;
 
         nav_msgs::Path refused_path;
         refused_path.poses.clear();
@@ -348,9 +318,6 @@ namespace osm_planner {
 //private functions
 
    void Parser::createMarkers() {
-
-        if (!visualization)
-            return;
 
         position_marker.header.frame_id = map_frame;
         position_marker.header.stamp =  ros::Time::now();
