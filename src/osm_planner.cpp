@@ -111,6 +111,23 @@ namespace osm_planner {
             return false;
         }
 
+        //Set the start pose to plan
+        plan.push_back(start);
+
+        double dist_x = start.pose.position.x - goal.pose.position.x;
+        double dist_y = start.pose.position.y - goal.pose.position.y;
+        double startGoalDist = sqrt(pow(dist_x, 2.0) + pow(dist_y, 2.0));
+
+        //If distance between start and goal pose is lower as footway width then skip the planning on the osm map
+        if (startGoalDist < footway_width){
+            plan.push_back(goal);
+            path.poses.clear();
+            path.poses.push_back(start);
+            path.poses.push_back(goal);
+            shortest_path_pub.publish(path);
+            return true;
+        }
+
         //set the start Pose
         setPositionFromOdom(start.pose.position);
 
@@ -127,7 +144,7 @@ namespace osm_planner {
            // return osm_planner::newTarget::Response::TARGET_IS_OUT_OF_WAY;
         }
 
-        plan.push_back(start);
+
 
        ///start planning, the Path is obtaining in global variable nav_msgs::Path path
         int result = planning(source.id, target.id);
