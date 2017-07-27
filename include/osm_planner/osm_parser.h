@@ -55,11 +55,9 @@ namespace osm_planner {
         void parse();
 
         //publishing functions
-        void publishPoint(int pointID, int marker_type, double radius);
-
-        void publishPoint(geometry_msgs::Point point, int marker_type, double radius);
-
-        void publishPoint(double latitude, double longitude, int marker_type, double radius);
+        void publishPoint(int pointID, int marker_type, double radius, geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromYaw(0));
+        void publishPoint(geometry_msgs::Point point, int marker_type, double radius, geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromYaw(0));
+        void publishPoint(double latitude, double longitude, int marker_type, double radius, geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromYaw(0));
 
         void publishRouteNetwork();
 
@@ -156,7 +154,7 @@ namespace osm_planner {
                 double y = sin(dLon) * cos(node.latitude * DEG2RAD);
                 double x = cos(originPoint.latitude * DEG2RAD) * sin(node.latitude * DEG2RAD) -
                            sin(originPoint.latitude * DEG2RAD) * cos(node.latitude * DEG2RAD) * cos(dLon);
-                return atan2(y, x);
+                return atan2(y, x)  + offset;;
             };
 
 

@@ -75,7 +75,7 @@ namespace osm_planner {
         createNetwork();
     }
 
-    void Parser::publishPoint(geometry_msgs::Point point, int marker_type, double radius) {
+    void Parser::publishPoint(geometry_msgs::Point point, int marker_type, double radius, geometry_msgs::Quaternion orientation) {
 
         point.z = 0;
 
@@ -94,6 +94,7 @@ namespace osm_planner {
                 target_marker.scale.x = radius;
                 target_marker.scale.y = radius;
                 target_marker.pose.position = point;
+                target_marker.pose.orientation = orientation;
                 target_marker_pub.publish(target_marker);
                 break;
             default:
@@ -101,7 +102,7 @@ namespace osm_planner {
         }
     }
 
-    void Parser::publishPoint(double latitude, double longitude, int marker_type, double radius) {
+    void Parser::publishPoint(double latitude, double longitude, int marker_type, double radius, geometry_msgs::Quaternion orientation) {
 
         geometry_msgs::Point point;
         point.x = 0;
@@ -115,11 +116,11 @@ namespace osm_planner {
         point.x = haversine.getCoordinateX(node);
         point.y = haversine.getCoordinateY(node);
 
-        publishPoint(point, marker_type, radius);
+        publishPoint(point, marker_type, radius, orientation);
     }
 
 
-    void Parser::publishPoint(int pointID, int marker_type, double radius) {
+    void Parser::publishPoint(int pointID, int marker_type, double radius,geometry_msgs::Quaternion orientation) {
 
         geometry_msgs::Point point;
         point.x = 0;
@@ -128,7 +129,7 @@ namespace osm_planner {
         point.x = haversine.getCoordinateX(nodes[pointID]);
         point.y = haversine.getCoordinateY(nodes[pointID]);
 
-        publishPoint(point, marker_type, radius);
+        publishPoint(point, marker_type, radius, orientation);
 
     }
 
@@ -340,6 +341,7 @@ namespace osm_planner {
         position_marker.color.a = 0.5;
 
         target_marker = position_marker;
+        target_marker.type = visualization_msgs::Marker::ARROW;
         //red marker
         target_marker.color.g = 0.0f;
    }

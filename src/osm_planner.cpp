@@ -114,36 +114,38 @@ namespace osm_planner {
         //Set the start pose to plan
         plan.push_back(start);
 
+        //localization of nearest point on the footway
+        setPositionFromOdom(start.pose.position);
+
+        //check target distance from footway
+        double dist = checkDistance(target.id, target.cartesianPoint.pose);
+        if (dist > interpolation_max_distance) {
+            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
+            // return osm_planner::newTarget::Response::TARGET_IS_OUT_OF_WAY;
+        }
+
+        //compute distance between start and goal
         double dist_x = start.pose.position.x - goal.pose.position.x;
         double dist_y = start.pose.position.y - goal.pose.position.y;
         double startGoalDist = sqrt(pow(dist_x, 2.0) + pow(dist_y, 2.0));
 
         //If distance between start and goal pose is lower as footway width then skip the planning on the osm map
-        if (startGoalDist < footway_width){
+        if (startGoalDist <  footway_width + checkDistance(source.id, start.pose)){
             plan.push_back(goal);
             path.poses.clear();
             path.poses.push_back(start);
             path.poses.push_back(goal);
             shortest_path_pub.publish(path);
+            osm.publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER, 1.0, goal.pose.orientation);
             return true;
         }
-
-        //set the start Pose
-        setPositionFromOdom(start.pose.position);
 
         //set the nearest point as target and save new target point
         target.id = osm.getNearestPointXY(goal.pose.position.x, goal.pose.position.y);
         target.cartesianPoint.pose = goal.pose;
 
         //draw target point
-        osm.publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER, 5.0);
-
-        double dist = checkDistance(target.id, target.cartesianPoint.pose);
-        if (dist > interpolation_max_distance) {
-            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
-           // return osm_planner::newTarget::Response::TARGET_IS_OUT_OF_WAY;
-        }
-
+        osm.publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER, 1.0, goal.pose.orientation);
 
 
        ///start planning, the Path is obtaining in global variable nav_msgs::Path path
@@ -194,7 +196,7 @@ namespace osm_planner {
         target.cartesianPoint.pose.orientation = tf::createQuaternionMsgFromYaw( osm.getCalculator()->getBearing(target.geoPoint));
 
         //draw target point
-        osm.publishPoint(target_latitude, target_longitude, Parser::TARGET_POSITION_MARKER, 5.0);
+        osm.publishPoint(target_latitude, target_longitude, Parser::TARGET_POSITION_MARKER, 1.0, target.cartesianPoint.pose.orientation);
 
         //checking distance to the nearest point
         double dist = checkDistance(target.id, target.geoPoint.latitude, target.geoPoint.longitude);
@@ -219,6 +221,8 @@ namespace osm_planner {
 
     void Planner::initializePos(double lat, double lon, double bearing) {
 
+        //todo - domysliet, ze co rotovat. Ci je lepsie rotovat celu mapu a robot staticky pri inite.
+        // todo - alebo mapa staticka a rototovat frame local_map, tak aby sa zrotoval robot aj s lokalnou a SLAM mapou
         osm.getCalculator()->setOffset(bearing);
         initializePos(lat, lon);
     }
@@ -292,7 +296,7 @@ namespace osm_planner {
         try {
             path = osm.getPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID));
 
-            ROS_INFO("OSM planner: Plan time %f ", (ros::Time::now() - start_time).toSec());
+            ROS_INFO("OSM planner: Time of planning: %f ", (ros::Time::now() - start_time).toSec());
 
         } catch (dijkstra_exception &e) {
             if (e.get_err_id() == dijkstra_exception::NO_PATH_FOUND) {
