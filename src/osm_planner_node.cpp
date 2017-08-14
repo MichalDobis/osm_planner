@@ -23,7 +23,7 @@ public:
     }
 
     void update(){
-        updatePoseFromTF();
+        localization.updatePoseFromTF();
     }
 
 private:
@@ -44,7 +44,7 @@ private:
 
     void odometryCallback(const nav_msgs::Odometry::ConstPtr& msg) {
 
-      setPositionFromOdom(msg->pose.pose.position);
+        localization.setPositionFromOdom(msg->pose.pose.position);
     }
 
 };

@@ -18,14 +18,14 @@ namespace osm_planner {
 
 
     Planner::Planner() :
-            osm(), dijkstra(), initialized_position(false) {
+            osm(), dijkstra(), localization(&osm) {
 
         initialized_ros = false;
         initialize();
     }
 
     Planner::Planner(std::string name, costmap_2d::Costmap2DROS* costmap_ros) :
-            osm(), dijkstra(), initialized_position(false) {
+            osm(), dijkstra(), localization(&osm) {
 
         initialized_ros = false;
         initialize(name, costmap_ros);
@@ -54,20 +54,8 @@ namespace osm_planner {
             n.getParam("filepath", file);
             osm.setNewMap(file);
 
-            //Set the density of points
-            n.param<double>("interpolation_max_distance", interpolation_max_distance, 1000);
-            osm.setInterpolationMaxDistance(interpolation_max_distance);
-
             std::string topic_name;
             n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path");
-
-            //names of frames
-            n.param<std::string>("global_frame", map_frame, "/map");
-            n.param<std::string>("local_map_frame", local_map_frame, "/rotated_map");
-            n.param<std::string>("robot_base_frame", base_link_frame, "/base_link");
-            n.param<bool>("use_tf", use_tf, true);
-            n.param<bool>("update_origin_pose", update_origin_pose, false);
-            n.param<double>("footway_width", footway_width, 0);
 
             std::string topic_gps_name;
             n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
@@ -90,11 +78,13 @@ namespace osm_planner {
 
             initialized_ros = true;
 
+            localization.initialize();
+
             //Debug param
             bool set_random_pose;
             n.param<bool>("set_random_pose", set_random_pose, false);
             if (set_random_pose)
-                initializePos();
+                localization.initializePos();
             else
                 ROS_WARN("OSM planner: Waiting for init position, please call init service...");
         }
@@ -106,7 +96,7 @@ namespace osm_planner {
 
     bool Planner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
 
-        if (!initialized_position) {
+        if (!localization.isInitialized()) {
             ROS_ERROR("OSM PLANNER: Reference point is not initialize, please call init service");
             return false;
         }
@@ -115,14 +105,10 @@ namespace osm_planner {
         plan.push_back(start);
 
         //localization of nearest point on the footway
-        setPositionFromOdom(start.pose.position);
+        localization.setPositionFromOdom(start.pose.position);
 
         //check target distance from footway
-        double dist = checkDistance(target.id, target.cartesianPoint.pose);
-        if (dist > interpolation_max_distance) {
-            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
-            // return osm_planner::newTarget::Response::TARGET_IS_OUT_OF_WAY;
-        }
+        localization.checkDistance(target.id, target.cartesianPoint.pose);
 
         //compute distance between start and goal
         double dist_x = start.pose.position.x - goal.pose.position.x;
@@ -130,7 +116,7 @@ namespace osm_planner {
         double startGoalDist = sqrt(pow(dist_x, 2.0) + pow(dist_y, 2.0));
 
         //If distance between start and goal pose is lower as footway width then skip the planning on the osm map
-        if (startGoalDist <  footway_width + checkDistance(source.id, start.pose)){
+        if (startGoalDist <  localization.getFootwayWidth() + localization.checkDistance(localization.getCurrentPosition()->id, start.pose)){
             plan.push_back(goal);
             path.poses.clear();
             path.poses.push_back(start);
@@ -149,13 +135,13 @@ namespace osm_planner {
 
 
        ///start planning, the Path is obtaining in global variable nav_msgs::Path path
-        int result = planning(source.id, target.id);
+        int result = planning(localization.getCurrentPosition()->id, target.id);
 
         //check the result of planning
           if (result == osm_planner::newTarget::Response::NOT_INIT || result == osm_planner::newTarget::Response::PLAN_FAILED)
             return false;
 
-        for (int i=0; i< path.poses.size(); i++){
+        for (int i=1; i< path.poses.size(); i++){
 
             geometry_msgs::PoseStamped new_goal = goal;
 
@@ -181,11 +167,11 @@ namespace osm_planner {
     int Planner::makePlan(double target_latitude, double target_longitude) {
 
         //Reference point is not initialize, please call init service
-        if (!initialized_position) {
+        if (!localization.isInitialized()) {
             return osm_planner::newTarget::Response::NOT_INIT;
         }
 
-        updatePoseFromTF(); //update source point from TF
+        localization.updatePoseFromTF(); //update source point from TF
 
         //save new target point
         target.geoPoint.latitude = target_latitude;
@@ -199,13 +185,9 @@ namespace osm_planner {
         osm.publishPoint(target_latitude, target_longitude, Parser::TARGET_POSITION_MARKER, 1.0, target.cartesianPoint.pose.orientation);
 
         //checking distance to the nearest point
-        double dist = checkDistance(target.id, target.geoPoint.latitude, target.geoPoint.longitude);
-        if (dist > interpolation_max_distance) {
-            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
+        localization.checkDistance(target.id, target.geoPoint.latitude, target.geoPoint.longitude);
 
-            return osm_planner::newTarget::Response::TARGET_IS_OUT_OF_WAY;
-        }
-       int result = planning(source.id, target.id);
+       int result = planning(localization.getCurrentPosition()->id, target.id);
 
         //add end (target) point
         path.poses.push_back(target.cartesianPoint);
@@ -215,69 +197,6 @@ namespace osm_planner {
 
     /*--------------------PROTECTED FUNCTIONS---------------------*/
 
-    //-------------------------------------------------------------//
-    //---------------Initialize pose from gps source---------------//
-    //-------------------------------------------------------------//
-
-    void Planner::initializePos(double lat, double lon, double bearing) {
-
-        //todo - domysliet, ze co rotovat. Ci je lepsie rotovat celu mapu a robot staticky pri inite.
-        // todo - alebo mapa staticka a rototovat frame local_map, tak aby sa zrotoval robot aj s lokalnou a SLAM mapou
-        osm.getCalculator()->setOffset(bearing);
-        initializePos(lat, lon);
-    }
-
-    void Planner::initializePos(double lat, double lon) {
-
-        osm.parse();
-        osm.getCalculator()->setOrigin(lat, lon);
-
-        //Save the position for path planning
-        source.geoPoint.latitude = lat;
-        source.geoPoint.longitude = lon;
-        source.id = osm.getNearestPoint(lat, lon);
-        source.cartesianPoint.pose.position.x = 0;
-        source.cartesianPoint.pose.position.y = 0;
-
-       // initial_angle = bearing;
-        if (update_origin_pose && !tfThread != NULL) {
-              tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&Planner::tfBroadcaster, this));
-                usleep(500000);
-        }
-        //checking distance to the nearest point
-        double dist = checkDistance(source.id, lat, lon);
-        if (dist > interpolation_max_distance)
-            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
-
-
-        //draw paths network
-        osm.publishRouteNetwork();
-        osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER, 50.0);
-
-        initialized_position = true;
-        ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
-    }
-
-    //-------------------------------------------------------------//
-    //--------Initialize pose from random gen - for debug----------//
-    //-------------------------------------------------------------//
-    void Planner::initializePos() {
-
-        osm.parse();
-        osm.setStartPoint();
-
-        //Save the position for path planning
-        source.geoPoint = osm.getCalculator()->getOrigin();
-        source.id = 0;
-        source.cartesianPoint.pose.position.x = 0;
-        source.cartesianPoint.pose.position.y = 0;
-
-        osm.publishPoint(source.geoPoint.latitude, source.geoPoint.longitude, Parser::CURRENT_POSITION_MARKER, 5.0);
-        //draw paths network
-        osm.publishRouteNetwork();
-        initialized_position = true;
-        ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
-    }
 
     //-------------------------------------------------------------//
     //-----------------MAKE PLAN from osm id's---------------------//
@@ -286,7 +205,7 @@ namespace osm_planner {
     int Planner::planning(int sourceID, int targetID) {
 
         //Reference point is not initialize, please call init service
-        if (!initialized_position) {
+        if (!localization.isInitialized()) {
             return osm_planner::newTarget::Response::NOT_INIT;
         }
 
@@ -315,7 +234,7 @@ namespace osm_planner {
     int Planner::cancelPoint(int pointID) {
 
         //Reference point is not initialize, please call init service
-        if (!initialized_position) {
+        if (!localization.isInitialized()) {
             return osm_planner::cancelledPoint::Response::NOT_INIT;
         }
 
@@ -337,13 +256,13 @@ namespace osm_planner {
         osm.deleteEdgeOnGraph(path[pointID], path[pointID + 1]);
 
         //planning shorest path
-        if (!updatePoseFromTF()) {     //update source position from TF
-            source.id = path[pointID];   //if source can not update from TF, return back to last position
+        if (!localization.updatePoseFromTF()) {     //update source position from TF
+            localization.getCurrentPosition()->id = path[pointID];   //if source can not update from TF, return back to last position
         }
 
         try {
 
-            this->path = osm.getPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), source.id, target.id));
+            this->path = osm.getPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), localization.getCurrentPosition()->id, target.id));
             this->path.poses.push_back(target.cartesianPoint);
             shortest_path_pub.publish(this->path);
 
@@ -356,112 +275,6 @@ namespace osm_planner {
         }
 
         return osm_planner::newTarget::Response::PLAN_OK;
-    }
-
-    //-------------------------------------------------------------//
-    //-----------------UPDATE POSE FUNCTIONS-----------------------//
-    //-------------------------------------------------------------//
-
-    bool Planner::updatePoseFromTF() {
-
-        if (!initialized_position || !use_tf)
-            return false;
-
-        geometry_msgs::Point point;
-        tf::TransformListener listener;
-        tf::StampedTransform transform;
-
-        try {
-            listener.waitForTransform(base_link_frame, map_frame, ros::Time(0), ros::Duration(1));
-            listener.lookupTransform(base_link_frame, map_frame, ros::Time(0), transform);
-        } catch (tf::TransformException ex) {
-           ROS_WARN("OSM planner: %s. Can't update pose from TF, for that will be use the latest source point.",
-                    ex.what());
-        }
-
-        tf::pointTFToMsg(transform.getOrigin(), point);
-
-        setPositionFromOdom(point);
-        return true;
-    }
-
-
-    void Planner::setPositionFromGPS(double lat, double lon, double accuracy) {
-
-        if (!initialized_position)
-            return;
-
-        //update source point
-        source.id = osm.getNearestPoint(lat, lon);
-        source.geoPoint.latitude = lat;
-        source.geoPoint.longitude = lon;
-        source.cartesianPoint.pose.position.x = osm.getCalculator()->getCoordinateX(source.geoPoint);
-        source.cartesianPoint.pose.position.y = osm.getCalculator()->getCoordinateY(source.geoPoint);
-        source.cartesianPoint.pose.orientation = tf::createQuaternionMsgFromYaw(osm.getCalculator()->getBearing(source.geoPoint));
-
-        osm.publishPoint(lat, lon, Parser::CURRENT_POSITION_MARKER, accuracy);
-
-        //checking distance to the nearest point
-        double dist = checkDistance(source.id, lat, lon);
-        if (dist > interpolation_max_distance)
-            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
-
-            nav_msgs::Odometry odom;
-            odom.header.stamp = ros::Time::now();
-
-
-            odom.header.frame_id = base_link_frame;
-
-            odom.child_frame_id = map_frame;
-
-            odom.pose.pose.position.x = source.cartesianPoint.pose.position.x;
-            odom.pose.pose.position.y = source.cartesianPoint.pose.position.y;
-            odom.pose.pose.position.z = 0;
-
-            odom.pose.pose.orientation.x = 0;
-            odom.pose.pose.orientation.y = 0;
-            odom.pose.pose.orientation.z = 0;
-            odom.pose.pose.orientation.w = 1;
-
-         /*   // Use ENU covariance to build XYZRPY covariance
-            boost::array<double, 36> covariance = {{
-                                                           fix->position_covariance[0],
-                                                           fix->position_covariance[1],
-                                                           fix->position_covariance[2],
-                                                           0, 0, 0,
-                                                           fix->position_covariance[3],
-                                                           fix->position_covariance[4],
-                                                           fix->position_covariance[5],
-                                                           0, 0, 0,
-                                                           fix->position_covariance[6],
-                                                           fix->position_covariance[7],
-                                                           fix->position_covariance[8],
-                                                           0, 0, 0,
-                                                           0, 0, 0, rot_cov, 0, 0,
-                                                           0, 0, 0, 0, rot_cov, 0,
-                                                           0, 0, 0, 0, 0, rot_cov
-                                                   }};
-
-            odom.pose.covariance = covariance;*/
-
-            gps_odom_pub.publish(odom);
-    }
-
-    void Planner::setPositionFromOdom(geometry_msgs::Point point) {
-
-        if (!initialized_position) {
-            return;
-        }
-
-        //update source point
-        source.id = osm.getNearestPointXY(point.x, point.y);
-        source.cartesianPoint.pose.position = point;
-       // osm.publishPoint(point, Parser::CURRENT_POSITION_MARKER, 5.0);
-
-        //checking distance to the nearest point
-        double dist = checkDistance(source.id, source.cartesianPoint.pose);
-        if (dist > interpolation_max_distance)
-            ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
     }
 
     //-------------------------------------------------------------//
@@ -479,14 +292,14 @@ namespace osm_planner {
     bool Planner::initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
         //if longitude and latitude are incorrect then get initalize pose from gps topic
-        if (req.longitude <= 0 && req.latitude <= 0 ) {
-            initFromGpsCallback = true;
-            osm.getCalculator()->setOffset(req.bearing);
-        }
-        else
-            //If data is correct
-            initializePos(req.latitude, req.longitude, req.bearing);
+        if (req.longitude <= 0 && req.latitude <= 0 ) initFromGpsCallback = true;
+        else localization.initializePos(req.latitude, req.longitude);
 
+        // if isn't set the flag update_tf_pose_from_gps, then set rotation of map
+        // else set rotation of tf
+    //    if  (!update_tf_pose_from_gps) osm.getCalculator()->setOffset(req.bearing);
+     //   else localization.getTF()->improveTfRotation(req.bearing);
+        localization.getTF()->improveTfRotation(req.bearing);
         return true;
     }
 
@@ -499,118 +312,36 @@ namespace osm_planner {
 
     void Planner::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
 
-        //If is request for initiliaze pose from gps callback
-        if (initFromGpsCallback && msg->status.status != sensor_msgs::NavSatStatus::STATUS_NO_FIX) {
-
-            initFromGpsCallback = false;
-            initializePos(msg->latitude, msg->longitude);
-
-        }
-
-        //if pose no initialized then cancel callback
-        if (!initialized_position)
+        if (msg->status.status == sensor_msgs::NavSatStatus::STATUS_NO_FIX)
             return;
 
-        double cov = getAccuracy(msg);
+        //If is request for initiliaze pose from gps callback
+        if (initFromGpsCallback) {
 
-        //todo - dorobit citanie gps vzhladom na frame
-        setPositionFromGPS(msg->latitude, msg->longitude, cov);
+            initFromGpsCallback = false;
+            localization.initializePos(msg->latitude, msg->longitude);
 
-        if (update_origin_pose) {
-
-           // static Parser::OSM_NODE lastPoint = osm.getCalculator()->getOrigin();
-            static double last_cov = 100000;
-
-            if (cov < last_cov){
-
-                improveOrigin(msg);
-                last_cov = cov;
-
-            }
-
-           /* if (Parser::Haversine::getDistance(lastPoint, *msg) > cov + last_cov) {
-
-                initial_angle = Parser::Haversine::getBearing(lastPoint, *msg);
-                tf::Quaternion q;
-                q.setRPY(0, 0, initial_angle);
-                transform.setRotation(q);
-
-                lastPoint.latitude = msg->latitude;
-                lastPoint.longitude = msg->longitude;
-                last_cov = cov;
-            }*/
-
-           // osm.publishPoint(lastPoint.latitude, lastPoint.longitude, Parser::TARGET_POSITION_MARKER, last_cov);
         }
 
+        localization.setPositionFromGPS(msg);
 
+        //gps to odom publisher
+        nav_msgs::Odometry odom;
+        odom.header.stamp = ros::Time::now();
+        odom.header.frame_id = localization.getTF()->getBaseLinkFrame();
+        odom.child_frame_id = localization.getTF()->getMapFrame();
 
+        odom.pose.pose.position.x = localization.getCurrentPosition()->cartesianPoint.pose.position.x;
+        odom.pose.pose.position.y = localization.getCurrentPosition()->cartesianPoint.pose.position.y;
+        odom.pose.pose.position.z = 0;
+
+        odom.pose.pose.orientation.x = 0;
+        odom.pose.pose.orientation.y = 0;
+        odom.pose.pose.orientation.z = 0;
+        odom.pose.pose.orientation.w = 1;
+
+        gps_odom_pub.publish(odom);
     }
 
-    double Planner::getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps){
-
-        double sum = 0;
-        for (double cov: gps->position_covariance){
-            sum += pow(cov, 2.0);
-        }
-        return sqrt(sum);
-    }
-
-    double Planner::checkDistance(int node_id, double lat, double lon) {
-
-        Parser::OSM_NODE node1 = osm.getNodeByID(node_id);
-        Parser::OSM_NODE node2;
-        node2.latitude = lat;
-        node2.longitude = lon;
-        return Parser::Haversine::getDistance(node1, node2) - footway_width;
-    }
-
-    double Planner::checkDistance(int node_id, geometry_msgs::Pose pose) {
-
-        Parser::OSM_NODE node = osm.getNodeByID(node_id);
-
-
-        double x = osm.getCalculator()->getCoordinateX(node);
-        double y = osm.getCalculator()->getCoordinateY(node);
-
-        return sqrt(pow(x - pose.position.x, 2.0) + pow(y - pose.position.y, 2.0)) - footway_width;
-    }
-
-
-    void Planner::improveOrigin(const sensor_msgs::NavSatFix::ConstPtr& gps){
-
-        updatePoseFromTF();
-
-        double odom_x = source.cartesianPoint.pose.position.x;
-        double odom_y = source.cartesianPoint.pose.position.y;
-
-        double pose_from_origin_x = osm.getCalculator()->getCoordinateX(source.geoPoint);
-        double pose_from_origin_y = osm.getCalculator()->getCoordinateY(source.geoPoint);
-
-        double diff_x = pose_from_origin_x - odom_x;
-        double diff_y = pose_from_origin_y - odom_y;
-
-        ROS_WARN("improve origin pose x:%f y:%f", diff_x, diff_y);
-
-        transform.setOrigin(tf::Vector3(diff_x, diff_y, 0));
-
-    }
-
-    void Planner::tfBroadcaster(){
-
-        //inicialize TF broadcaster
-        transform.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
-        tf::Quaternion q;
-        q.setRPY(0, 0, 0);
-        transform.setRotation(q);
-
-        ros::Rate rate(10);
-
-        while (ros::ok()){
-
-            br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), map_frame, local_map_frame));
-            rate.sleep();
-        }
-    }
 }
 

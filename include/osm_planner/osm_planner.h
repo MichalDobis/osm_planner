@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <osm_planner/dijkstra.h>
 #include <osm_planner/osm_parser.h>
+#include <osm_planner/osm_localization.h>
 #include <osm_planner/newTarget.h>
 #include <osm_planner/cancelledPoint.h>
 #include <std_msgs/Int32.h>
@@ -43,10 +44,9 @@ namespace osm_planner {
 
     protected:
 
-        //Before start make plan, this function must be call
-        void initializePos(double lat, double lon, double bearing);
-        void initializePos(double lat, double lon);
-        void initializePos();
+        //Class for localization on the map
+        Localization localization;
+
 
         //make plan from source to target
         int planning(int sourceID, int targetID);
@@ -54,10 +54,6 @@ namespace osm_planner {
         //deleted selected point id on the path
         int cancelPoint(int pointID);
 
-        //update pose
-        bool updatePoseFromTF(); //from tf
-        void setPositionFromGPS(double lat, double lon, double accuracy);        //from gps
-        void setPositionFromOdom(geometry_msgs::Point point);  //from odom
 
     private:
 
@@ -65,17 +61,9 @@ namespace osm_planner {
         Dijkstra dijkstra;
 
         bool initialized_ros;
-        bool initialized_position;
 
-        POINT source;
         POINT target;
 
-        //global ros parameters
-        bool use_tf;
-        bool update_origin_pose;
-        std::string map_frame, base_link_frame, local_map_frame;
-        double interpolation_max_distance;
-        double footway_width;
         bool initFromGpsCallback;
 
         /*Publisher*/
@@ -100,19 +88,5 @@ namespace osm_planner {
         bool drawingRouteCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
         void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg);
 
-        double checkDistance(int node_id, double lat, double lon);
-        double checkDistance(int node_id, geometry_msgs::Pose pose);
-        double getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps);
-
-        void improveOrigin(const sensor_msgs::NavSatFix::ConstPtr& gps);
-
-        /*tf broadcaster*/
-        tf::TransformBroadcaster br;
-        tf::Transform transform;
-
-        //tf broadcaster thread
-    //    double initial_angle;
-        boost::shared_ptr<boost::thread> tfThread;
-        void tfBroadcaster();
     };
 }

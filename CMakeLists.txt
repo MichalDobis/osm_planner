@@ -129,6 +129,7 @@ add_library(osm_planner
         src/osm_planner.cpp
         src/osm_parser.cpp
         src/dijkstra.cpp
+        src/osm_localization.cpp
         )
 target_link_libraries(osm_planner
         ${catkin_LIBRARIES}
