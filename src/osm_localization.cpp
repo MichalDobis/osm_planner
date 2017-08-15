@@ -34,6 +34,7 @@ namespace osm_planner {
 
         return initialized_ros && initialized_position;
     }
+
     void Localization::initialize(){
 
         if (!initialized_ros) {
@@ -57,6 +58,13 @@ namespace osm_planner {
 
             n.param<int>("update_tf_pose_from_gps", update_tf_pose_from_gps, 2);
             n.param<double>("footway_width", footway_width, 0);
+
+
+            //create tf broadcaster thread
+            //   if (update_tf_pose_from_gps) {
+            tfHandler.initThread();
+            //  }
+
 
             initialized_ros = true;
 
@@ -92,9 +100,6 @@ namespace osm_planner {
         source.cartesianPoint.pose.position.y = 0;
         //create tf broadcaster thread
 
-        if (update_tf_pose_from_gps) {
-           tfHandler.initThread();
-        }
 
         //checking distance to the nearest point
         double dist = checkDistance(source.id, lat, lon);
@@ -133,11 +138,6 @@ namespace osm_planner {
         initialized_position = true;
         ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
 
-        //create tf broadcaster thread
-        if (update_tf_pose_from_gps) {
-            tfHandler.initThread();
-        }
-
     }
 
     //-------------------------------------------------------------//
@@ -149,7 +149,7 @@ namespace osm_planner {
         if (!initialized_position)
             return false;
 
-        setPositionFromOdom(tfHandler.getPoseFromTF());
+        setPositionFromOdom(tfHandler.getPoseFromTF(tfHandler.getMapFrame()));
     }
 
     bool Localization::setPositionFromGPS(const sensor_msgs::NavSatFix::ConstPtr& msg) {
@@ -259,7 +259,7 @@ namespace osm_planner {
         this->calculator = calculator;
     }
 
-    void TfHandler::setFrames(std::string map_frame, std::string base_link_frame, std::string local_map_frame) {
+    void TfHandler::setFrames(std::string map_frame, std::string local_map_frame, std::string base_link_frame) {
 
         this->map_frame = map_frame;
         this->base_link_frame = base_link_frame;
@@ -274,7 +274,7 @@ namespace osm_planner {
 
     }
 
-    geometry_msgs::Point TfHandler::getPoseFromTF() {
+    geometry_msgs::Point TfHandler::getPoseFromTF(std::string map_link) {
 
 
         geometry_msgs::Point point;
@@ -282,8 +282,8 @@ namespace osm_planner {
         tf::StampedTransform transform;
 
         try {
-            listener.waitForTransform(base_link_frame, map_frame, ros::Time(0), ros::Duration(1));
-            listener.lookupTransform(base_link_frame, map_frame, ros::Time(0), transform);
+            listener.waitForTransform(base_link_frame, map_link, ros::Time(0), ros::Duration(1));
+            listener.lookupTransform(base_link_frame, map_link, ros::Time(0), transform);
         } catch (tf::TransformException ex) {
             ROS_WARN("OSM planner: %s. Can't update pose from TF, for that will be use the latest source point.",
                      ex.what());
@@ -296,8 +296,10 @@ namespace osm_planner {
 
     void TfHandler::improveTfPoseFromGPS(const sensor_msgs::NavSatFix::ConstPtr& gps){
 
+        static double diff_x = 0;
+        static double diff_y = 0;
 
-        geometry_msgs::Point positionFromTF = getPoseFromTF();
+        geometry_msgs::Point positionFromTF = getPoseFromTF(getLocalMapFrame());
 
         double odom_x = positionFromTF.x;
         double odom_y = positionFromTF.y;
@@ -305,20 +307,23 @@ namespace osm_planner {
         double pose_from_origin_x = calculator->getCoordinateX(*gps);
         double pose_from_origin_y = calculator->getCoordinateY(*gps);
 
-        double diff_x = pose_from_origin_x - odom_x;
-        double diff_y = pose_from_origin_y - odom_y;
+        diff_x = pose_from_origin_x - odom_x;
+        diff_y = pose_from_origin_y - odom_y;
 
         ROS_WARN("improve tf pose from gps x:%f y:%f", diff_x, diff_y);
 
+        broadcaster_mutex.lock();
         transform.setOrigin(tf::Vector3(diff_x, diff_y, 0));
-
+        broadcaster_mutex.unlock();
     }
 
     void TfHandler::improveTfRotation(double angle) {
 
         tf::Quaternion q;
         q.setRPY(0, 0, angle);
+        broadcaster_mutex.lock();
         transform.setRotation(q);
+        broadcaster_mutex.unlock();
     }
 
     void TfHandler::tfBroadcaster(){
@@ -329,11 +334,14 @@ namespace osm_planner {
         q.setRPY(0, 0, 0);
         transform.setRotation(q);
 
+     //   std::string rotated_frame = local_map_frame + "_rotated";
+
         ros::Rate rate(10);
 
         while (ros::ok()){
-
+            broadcaster_mutex.lock();
             br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), map_frame, local_map_frame));
+            broadcaster_mutex.unlock();
             rate.sleep();
         }
     }

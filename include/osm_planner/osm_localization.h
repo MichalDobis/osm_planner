@@ -31,9 +31,9 @@ namespace osm_planner {
         void improveTfPoseFromGPS(const sensor_msgs::NavSatFix::ConstPtr& gps);
         void improveTfRotation(double angle);
 
-        geometry_msgs::Point getPoseFromTF(); //from tf
+        geometry_msgs::Point getPoseFromTF(std::string map_link); //from tf
 
-        void setFrames(std::string map_frame, std::string base_link_frame, std::string local_map_frame);
+        void setFrames(std::string map_frame, std::string local_map_frame, std::string base_link_frame);
         std::string getMapFrame();
         std::string getBaseLinkFrame();
         std::string getLocalMapFrame();
@@ -53,6 +53,8 @@ namespace osm_planner {
         //    double initial_angle;
         boost::shared_ptr<boost::thread> tfThread;
         void tfBroadcaster();
+
+        boost::mutex broadcaster_mutex;
     };
 
     class Localization {

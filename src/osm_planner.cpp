@@ -289,6 +289,7 @@ namespace osm_planner {
         return true;
     }
 
+
     bool Planner::initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
 
         //if longitude and latitude are incorrect then get initalize pose from gps topic
