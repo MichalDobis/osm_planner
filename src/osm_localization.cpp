@@ -8,7 +8,7 @@
 namespace osm_planner {
 
 
-    Localization::Localization(osm_planner::Parser *map) : tfHandler(map->getCalculator()) {
+    Localization::Localization(osm_planner::Parser *map) : tfHandler(map->getCalculator()), pathFollower(map) {
 
         this->map = map;
         initialized_position = false;
@@ -27,6 +27,7 @@ namespace osm_planner {
     }
 
     double Localization::getFootwayWidth(){
+
         return footway_width;
     }
 
@@ -59,13 +60,13 @@ namespace osm_planner {
             n.param<int>("update_tf_pose_from_gps", update_tf_pose_from_gps, 2);
             n.param<double>("footway_width", footway_width, 0);
 
+            double distance_for_update_rotation = 5.0;
+            n.param<double>("distance_for_update_rotation", distance_for_update_rotation, 5.0);
+            n.param<bool>("matching_tf_with_map", matching_tf_with_map, false);
+            pathFollower.setMaxDistance(distance_for_update_rotation);
 
             //create tf broadcaster thread
-            //   if (update_tf_pose_from_gps) {
             tfHandler.initThread();
-            //  }
-
-
             initialized_ros = true;
 
         }
@@ -191,6 +192,12 @@ namespace osm_planner {
                 break;
         }
 
+        if (matching_tf_with_map){
+
+            pathFollower.addPoint(tfHandler.getPoseFromTF(tfHandler.getMapFrame()));
+            pathFollower.doCorrection(&tfHandler);
+        }
+
         return true;
     }
 
@@ -233,6 +240,7 @@ namespace osm_planner {
         if (dist > interpolation_max_distance) {
             ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
         }
+
 
         return dist;
     }
@@ -310,17 +318,29 @@ namespace osm_planner {
         diff_x = pose_from_origin_x - odom_x;
         diff_y = pose_from_origin_y - odom_y;
 
-        ROS_WARN("improve tf pose from gps x:%f y:%f", diff_x, diff_y);
+        ROS_INFO("improve tf pose from gps x:%f y:%f", diff_x, diff_y);
 
         broadcaster_mutex.lock();
         transform.setOrigin(tf::Vector3(diff_x, diff_y, 0));
         broadcaster_mutex.unlock();
     }
 
-    void TfHandler::improveTfRotation(double angle) {
+    void TfHandler::setTfRotation(double angle) {
 
+        yaw = angle;
         tf::Quaternion q;
-        q.setRPY(0, 0, angle);
+        q.setRPY(0, 0, yaw);
+        broadcaster_mutex.lock();
+        transform.setRotation(q);
+        broadcaster_mutex.unlock();
+    }
+
+
+    void TfHandler::improveTfRotation(double angleDiff) {
+
+        yaw += angleDiff;
+        tf::Quaternion q;
+        q.setRPY(0, 0,  yaw);
         broadcaster_mutex.lock();
         transform.setRotation(q);
         broadcaster_mutex.unlock();
@@ -350,4 +370,93 @@ namespace osm_planner {
     std::string TfHandler::getBaseLinkFrame(){ return base_link_frame; }
     std::string TfHandler::getLocalMapFrame(){ return local_map_frame; }
 
+
+    //-----------------------------------]
+    //-------PATH FOLLOWER---------------]
+    // --------------------------------------
+
+    PathFollower::PathFollower(osm_planner::Parser *map) {
+
+        this->map = map;
+        firstNodeAdded = false;
+        secondNodeAdded = false;
+        angleDiff = 0;
+    }
+
+    void PathFollower::setMaxDistance(double maxDistance) {
+
+        this->maxDistance = maxDistance;
+    }
+
+    void PathFollower::addPoint(geometry_msgs::Point point) {
+
+        static int lastNodeID;
+
+        int nodeID = map->getNearestPointXY(point.x, point.y);
+
+        this->currentPosition = point;
+        this->currentNodeID = nodeID;
+
+        if (!firstNodeAdded){
+
+            this->firstPosition = point;
+            this->firstNodeID = nodeID;
+            lastNodeID = nodeID;
+            firstNodeAdded = true;
+            ROS_WARN("ADD first point");
+            return;
+        }
+
+        if (lastNodeID == nodeID) {
+            ROS_WARN("rovnake ID bodov %d", nodeID);
+            return;
+        }
+
+        calculate();
+    }
+
+    void PathFollower::calculate() {
+
+        //calculate angle between current node and first node
+        double pathAngle = map->getCalculator()->getBearing(map->getNodeByID(firstNodeID), map->getNodeByID(currentNodeID));
+
+        if (!secondNodeAdded){
+
+            ROS_WARN("add second point");
+            bearing = pathAngle;
+            secondNodeAdded = true;
+            return;
+        }
+
+        if (fabs(pathAngle - bearing) > 0.01) {
+            clear();
+            return;
+        }
+
+        double pathDist = map->getCalculator()->getDistance(map->getNodeByID(firstNodeID), map->getNodeByID(currentNodeID));
+        double odomDist = sqrt(pow(currentPosition.x - firstPosition.x, 2.0) + pow(currentPosition.y - firstPosition.y, 2.0));
+        double odomAngle = atan2(currentPosition.x - firstPosition.x, currentPosition.y - firstPosition.y);
+
+        angleDiff = pathAngle - odomAngle;
+
+        ROS_WARN("calculating: Odom dist %f, angle %f. Path dist %f, angle %f", odomDist, odomAngle, pathDist, pathAngle);
+      return;
+
+    }
+
+    void PathFollower::doCorrection(TfHandler *tf) {
+
+        double pathDist = map->getCalculator()->getDistance(map->getNodeByID(firstNodeID), map->getNodeByID(currentNodeID));
+        if (pathDist > maxDistance) {
+            ROS_ERROR("update correction %f", angleDiff);
+            tf->improveTfRotation(angleDiff);
+            clear();
+        }
+    }
+
+    void PathFollower::clear(){
+
+        firstNodeAdded = false;
+        secondNodeAdded = false;
+    }
 }

@@ -168,9 +168,9 @@ namespace osm_planner {
 
                 return node1.longitude < node2.longitude ? dist : -dist;*/
 
-              double dist = getDistance(originPoint, node);
-              double bearing  = getBearing(originPoint, node);
-              return sin(bearing + offset)*dist;
+               double dist = getDistance(originPoint, node);
+               double bearing  = getBearing(originPoint, node);
+               return sin(bearing + offset)*dist;
 
             };
 

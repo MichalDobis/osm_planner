@@ -28,6 +28,7 @@ namespace osm_planner {
     public:
         TfHandler(osm_planner::Parser::Haversine *calculator);
         void initThread();
+        void setTfRotation(double angle);
         void improveTfPoseFromGPS(const sensor_msgs::NavSatFix::ConstPtr& gps);
         void improveTfRotation(double angle);
 
@@ -37,7 +38,6 @@ namespace osm_planner {
         std::string getMapFrame();
         std::string getBaseLinkFrame();
         std::string getLocalMapFrame();
-
 
     private:
 
@@ -49,13 +49,44 @@ namespace osm_planner {
         tf::TransformBroadcaster br;
         tf::Transform transform;
 
+        double yaw;
         //tf broadcaster thread
         //    double initial_angle;
         boost::shared_ptr<boost::thread> tfThread;
         void tfBroadcaster();
 
+
         boost::mutex broadcaster_mutex;
     };
+
+    class PathFollower{
+
+    public:
+        PathFollower(osm_planner::Parser *map);
+        void addPoint(geometry_msgs::Point point);
+        void doCorrection(TfHandler *tf);
+        void setMaxDistance(double maxDistance);
+
+    private:
+
+        osm_planner::Parser *map;
+        int firstNodeID;
+        int currentNodeID;
+
+        geometry_msgs::Point firstPosition;
+        geometry_msgs::Point currentPosition;
+
+        bool firstNodeAdded, secondNodeAdded;
+
+        double angleDiff;
+
+        double bearing;
+        double maxDistance;
+
+        void calculate();
+        void clear();
+    };
+
 
     class Localization {
     public:
@@ -95,6 +126,7 @@ namespace osm_planner {
     private:
 
         TfHandler tfHandler;
+        PathFollower pathFollower;
 
         osm_planner::Parser *map;
 
@@ -104,6 +136,7 @@ namespace osm_planner {
         bool initialized_position;
 
         //global ros parameters
+        bool matching_tf_with_map;
         int update_tf_pose_from_gps;
         double interpolation_max_distance;
         double footway_width;

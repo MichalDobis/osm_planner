@@ -300,7 +300,7 @@ namespace osm_planner {
         // else set rotation of tf
     //    if  (!update_tf_pose_from_gps) osm.getCalculator()->setOffset(req.bearing);
      //   else localization.getTF()->improveTfRotation(req.bearing);
-        localization.getTF()->improveTfRotation(req.bearing);
+        localization.getTF()->setTfRotation(req.bearing);
         return true;
     }
 
