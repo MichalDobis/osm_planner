@@ -66,7 +66,12 @@ namespace osm_planner {
             pathFollower.setMaxDistance(distance_for_update_rotation);
 
             //create tf broadcaster thread
-            tfHandler.initThread();
+            bool use_map_rotation;
+            n.param<bool>("use_map_rotation", use_map_rotation, true);
+
+            if (!use_map_rotation)
+              tfHandler.initThread();
+
             initialized_ros = true;
 
         }

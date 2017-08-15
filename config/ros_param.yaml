@@ -17,5 +17,7 @@ osm:
                                  # 1 - Do correction only when gps accuracy is better
                                  # 2 - Do correction always when is received correct gps message
 
- matching_tf_with_map: true
+
+ use_map_rotation: true
+ matching_tf_with_map: false
  distance_for_update_rotation: 5.0

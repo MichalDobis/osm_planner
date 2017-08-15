@@ -60,6 +60,7 @@ namespace osm_planner {
             std::string topic_gps_name;
             n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
 
+            n.param<bool>("use_map_rotation", use_map_rotation, true);
             initFromGpsCallback = false;
 
             //subscribers
@@ -298,9 +299,10 @@ namespace osm_planner {
 
         // if isn't set the flag update_tf_pose_from_gps, then set rotation of map
         // else set rotation of tf
-    //    if  (!update_tf_pose_from_gps) osm.getCalculator()->setOffset(req.bearing);
-     //   else localization.getTF()->improveTfRotation(req.bearing);
-        localization.getTF()->setTfRotation(req.bearing);
+       if  (use_map_rotation) osm.getCalculator()->setOffset(req.bearing);
+        else localization.getTF()->improveTfRotation(req.bearing);
+
+     //   localization.getTF()->setTfRotation(req.bearing);
         return true;
     }
 

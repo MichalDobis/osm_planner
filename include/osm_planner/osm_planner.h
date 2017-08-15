@@ -66,6 +66,7 @@ namespace osm_planner {
 
         bool initFromGpsCallback;
 
+        bool use_map_rotation;
         /*Publisher*/
         ros::Publisher shortest_path_pub;
      //   ros::Publisher utm_init_pub;
