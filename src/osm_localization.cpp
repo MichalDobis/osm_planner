@@ -181,7 +181,7 @@ namespace osm_planner {
             case 1:
                 static double last_cov = 100000;
 
-                if (cov < last_cov){
+                if (cov <= last_cov){
 
                     tfHandler.improveTfPoseFromGPS(msg);
                     last_cov = cov;

@@ -13,7 +13,7 @@ osm:
                                 # If value is all, then parse all routes
  footway_width: 2
  set_random_pose: false          # Set the random pose in a map at initialization (DEBUG param)
- update_tf_pose_from_gps: 0      # 0 - no tf correction from gps
+ update_tf_pose_from_gps: 1      # 0 - no tf correction from gps
                                  # 1 - Do correction only when gps accuracy is better
                                  # 2 - Do correction always when is received correct gps message
 
