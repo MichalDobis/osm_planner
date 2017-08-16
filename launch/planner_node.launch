@@ -2,14 +2,12 @@
 <launch>
   <master auto="start"/>
 
-    <include file="$(find osm_planner)/launch/planner_setup.launch" ns="osm_planner_node">
-        <!--Defining this arg is necessary to change file path -->
-        <arg name="filepath" default="$(find osm_planner)/osm_example/fei.osm"/>
-    </include>
-
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find osm_planner)/rviz/osm_node.rviz" required="true"/>
 
-  <node pkg="osm_planner" type="osm_planner_node" respawn="false" name="osm_planner_node" output="screen"/>
+  <node pkg="osm_planner" type="osm_planner_node" respawn="false" name="osm_planner_node" output="screen">
+      <param name="global_costmap/filepath" value="$(arg filepath)"/>
+      <rosparam file="$(find osm_planner)/config/ros_param.yaml" command="load" />
+  </node>
 
   <!--node name="navigation_example" pkg="osm_planner" type="navigation_example"/>
   <rosparam command="load" file="$(find osm_planner)/test/test_fei.yaml"/-->

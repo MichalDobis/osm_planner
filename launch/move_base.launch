@@ -2,20 +2,13 @@
 <launch>
   <master auto="start"/>
 
-    <arg name="filepath" default="$(find osm_planner)/osm_example/sad_janka_krala.osm"/>
-
-    <include file="$(find osm_planner)/launch/planner_setup.launch" ns="move_base">
-        <!--Defining this arg is necessary to change file path -->
-        <arg name="filepath" value="$(arg filepath)"/>
-    </include>
+    <arg name="filepath" default="$(find osm_planner)/osm_example/fei.osm"/>
 
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
      <param name="base_global_planner" value="osm_planner/Planner"/>
- <param name="controller_frequency" value="10"/>
-    <!--rosparam file="$(find mrvk_2dnav)/config/costmap_common.yaml" command="load" ns="local_costmap" />
-    <rosparam file="$(find mrvk_2dnav)/config/local_costmap.yaml" command="load" />
-    <rosparam file="$(find mrvk_2dnav)/config/base_local_planner.yaml" command="load" /-->
-    <!--remap from="odom" to="/mrvk/diff_drive_controller/odom"/-->
+     <param name="controller_frequency" value="10"/>
+     <param name="global_costmap/filepath" value="$(arg filepath)"/>
+     <rosparam file="$(find osm_planner)/config/ros_param.yaml" command="load" />
   </node>
 
   <node name="navigation_example" pkg="osm_planner" type="navigation_example" ns="move_base"/>
