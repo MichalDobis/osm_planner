@@ -72,7 +72,7 @@ Visualization Manager:
       Radius: 0.03
       Shaft Diameter: 0.1
       Shaft Length: 0.1
-      Topic: /move_base/osm/route_network
+      Topic: /move_base/global_costmap/route_network
       Unreliable: false
       Value: true
     - Alpha: 1
@@ -94,20 +94,20 @@ Visualization Manager:
       Radius: 0.03
       Shaft Diameter: 0.1
       Shaft Length: 0.1
-      Topic: /move_base/osm/shortest_path
+      Topic: /shortest_path
       Unreliable: false
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /move_base/osm/position_marker
+      Marker Topic: /move_base/global_costmap/position_marker
       Name: Marker
       Namespaces:
-        work_space: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /move_base/osm/target_marker
+      Marker Topic: /move_base/global_costmap/target_marker
       Name: Marker
       Namespaces:
         {}
@@ -132,7 +132,7 @@ Visualization Manager:
       Radius: 0.03
       Shaft Diameter: 0.1
       Shaft Length: 0.1
-      Topic: /move_base/osm/refused_path
+      Topic: /move_base/global_costmap/refused_path
       Unreliable: false
       Value: true
     - Class: rviz/TF
@@ -144,22 +144,13 @@ Visualization Manager:
           Value: true
         map:
           Value: true
-        map_rotated:
-          Value: true
-        world:
-          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          base_link:
-            {}
-        world:
-          map_rotated:
-            {}
+        {}
       Update Interval: 0
       Value: true
   Enabled: true

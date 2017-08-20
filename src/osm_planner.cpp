@@ -47,7 +47,7 @@ namespace osm_planner {
 
         if (!initialized_ros) {
             //init ros topics and services
-            ros::NodeHandle n("~/osm");
+            ros::NodeHandle n("~/global_costmap");
 
             //source of map
             std::string file = "skuska.osm";

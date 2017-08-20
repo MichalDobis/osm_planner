@@ -40,7 +40,7 @@ namespace osm_planner {
 
         if (!initialized_ros) {
             //init ros topics and services
-            ros::NodeHandle n("~/osm");
+            ros::NodeHandle n("~/global_costmap");
 
             //Set the density of points
             n.param<double>("interpolation_max_distance", interpolation_max_distance, 1000);
