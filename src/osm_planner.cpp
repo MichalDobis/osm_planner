@@ -74,6 +74,7 @@ namespace osm_planner {
 
             //services
             init_service = n.advertiseService("init", &Planner::initCallback, this);
+            computeBearing = n.advertiseService("compute_bearing", &Planner::computeBearingCallback, this);
             cancel_point_service = n.advertiseService("cancel_point", &Planner::cancelPointCallback, this);
             drawing_route_service = n.advertiseService("draw_route", &Planner::drawingRouteCallback, this);
 
@@ -303,6 +304,18 @@ namespace osm_planner {
         else localization.getTF()->improveTfRotation(req.bearing);
 
      //   localization.getTF()->setTfRotation(req.bearing);
+        return true;
+    }
+
+    bool Planner::computeBearingCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
+
+        if (!localization.isInitialized())
+            return true;
+
+        osm_planner::Parser::OSM_NODE currentPose = localization.getCurrentPosition()->geoPoint;
+        double angle = osm.getCalculator()->getBearing(currentPose);
+        ROS_WARN("set bearing %f", angle);
+        localization.getTF()->improveTfRotation(angle);
         return true;
     }
 

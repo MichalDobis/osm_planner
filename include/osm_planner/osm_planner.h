@@ -80,11 +80,13 @@ namespace osm_planner {
 
         /* Services */
         ros::ServiceServer init_service;
+        ros::ServiceServer computeBearing;
         ros::ServiceServer cancel_point_service;
         ros::ServiceServer drawing_route_service;
 
         //callbacks
         bool initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
+        bool computeBearingCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
         bool cancelPointCallback(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res);
         bool drawingRouteCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
         void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg);

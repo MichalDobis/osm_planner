@@ -4,6 +4,8 @@
 
     <arg name="filepath" default="$(find osm_planner)/osm_example/fei.osm"/>
 
+    <!-- pkg="osm_planner" type="osm_helper" name="osm_helper" output="screen"/-->
+
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
      <param name="base_global_planner" value="osm_planner/Planner"/>
      <param name="controller_frequency" value="10"/>
@@ -11,7 +13,7 @@
      <rosparam file="$(find osm_planner)/config/ros_param.yaml" command="load" />
   </node>
 
-  <node name="navigation_example" pkg="osm_planner" type="navigation_example" ns="move_base"/>
+  <node name="osm_helper" pkg="osm_planner" type="osm_helper" ns="move_base"/>
   <!--rosparam command="load" file="$(find osm_planner)/test/test_fei.yaml"/-->
 
 </launch>

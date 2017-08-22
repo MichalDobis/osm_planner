@@ -130,6 +130,7 @@ add_library(osm_planner
         src/osm_parser.cpp
         src/dijkstra.cpp
         src/osm_localization.cpp
+      #  src/auto_initalization.cpp
         )
 target_link_libraries(osm_planner
         ${catkin_LIBRARIES}
@@ -140,8 +141,12 @@ target_link_libraries(osm_planner_node osm_planner  ${catkin_LIBRARIES} ${TinyXM
 add_dependencies(osm_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} osm_planner)
 
 add_executable(navigation_example src/navigation_example.cpp)
-target_link_libraries(navigation_example ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
+target_link_libraries(navigation_example ${catkin_LIBRARIES})
 add_dependencies(navigation_example ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(osm_helper src/osm_helper.cpp)
+target_link_libraries(osm_helper ${catkin_LIBRARIES})
+add_dependencies(osm_helper ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #############
 ## Install ##
 #############

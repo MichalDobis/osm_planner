@@ -94,7 +94,7 @@ Visualization Manager:
       Radius: 0.03
       Shaft Diameter: 0.1
       Shaft Length: 0.1
-      Topic: /shortest_path
+      Topic: /move_base/global_costmap/shortest_path
       Unreliable: false
       Value: true
     - Class: rviz/Marker
@@ -102,7 +102,7 @@ Visualization Manager:
       Marker Topic: /move_base/global_costmap/position_marker
       Name: Marker
       Namespaces:
-        {}
+        work_space: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -110,7 +110,7 @@ Visualization Manager:
       Marker Topic: /move_base/global_costmap/target_marker
       Name: Marker
       Namespaces:
-        {}
+        work_space: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -144,13 +144,18 @@ Visualization Manager:
           Value: true
         map:
           Value: true
+        world:
+          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        world:
+          map:
+            base_link:
+              {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -177,7 +182,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 135.44
+      Distance: 43.3724
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1

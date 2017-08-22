@@ -69,6 +69,8 @@ namespace osm_planner {
             bool use_map_rotation;
             n.param<bool>("use_map_rotation", use_map_rotation, true);
 
+            system("rosnode kill /move_base/osm_helper");
+
             if (!use_map_rotation)
               tfHandler.initThread();
 
@@ -283,6 +285,7 @@ namespace osm_planner {
     void TfHandler::initThread(){
 
         tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&TfHandler::tfBroadcaster, this));
+        ROS_ERROR("trhead run");
         usleep(500000);
 
     }
@@ -408,14 +411,11 @@ namespace osm_planner {
             this->firstNodeID = nodeID;
             lastNodeID = nodeID;
             firstNodeAdded = true;
-            ROS_WARN("ADD first point");
             return;
         }
 
-        if (lastNodeID == nodeID) {
-            ROS_WARN("rovnake ID bodov %d", nodeID);
-            return;
-        }
+        if (lastNodeID == nodeID) return;
+
 
         calculate();
     }
@@ -427,7 +427,6 @@ namespace osm_planner {
 
         if (!secondNodeAdded){
 
-            ROS_WARN("add second point");
             bearing = pathAngle;
             secondNodeAdded = true;
             return;
