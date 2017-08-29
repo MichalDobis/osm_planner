@@ -86,7 +86,7 @@ namespace osm_planner {
 
         public:
 
-            Haversine(): offset(0){}
+            Haversine(): offset(M_PI/2){}
             Haversine(double bearing): offset(bearing){}
 
             void setOffset(double offset){ this->offset = offset;}
@@ -170,8 +170,8 @@ namespace osm_planner {
 
                double dist = getDistance(originPoint, node);
                double bearing  = getBearing(originPoint, node);
-             //  return sin(bearing + offset)*dist;
-                return cos(bearing + offset)*dist;
+               return sin(bearing + offset)*dist;
+             //   return cos(bearing + offset)*dist;
             };
 
             template<class N> double getCoordinateY(N node){
@@ -185,8 +185,8 @@ namespace osm_planner {
 
                 double dist = getDistance(originPoint, node);
                 double bearing  = getBearing(originPoint, node);
-               // return cos(bearing + offset)*dist;
-                return sin(bearing + offset)*dist;
+                return cos(bearing + offset)*dist;
+               // return sin(bearing + offset)*dist;
             };
 
         private:

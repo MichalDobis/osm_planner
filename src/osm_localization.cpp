@@ -306,7 +306,6 @@ namespace osm_planner {
     void TfHandler::initThread(){
 
         tfThread = boost::shared_ptr<boost::thread>(new boost::thread(&TfHandler::tfBroadcaster, this));
-        ROS_ERROR("trhead run");
         usleep(500000);
 
     }

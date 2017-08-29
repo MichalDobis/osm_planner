@@ -315,7 +315,7 @@ namespace osm_planner {
         osm_planner::Parser::OSM_NODE currentPose = localization.getCurrentPosition()->geoPoint;
         double angle = osm.getCalculator()->getBearing(currentPose);
         ROS_WARN("set bearing %f", angle);
-        localization.getTF()->improveTfRotation(angle);
+        localization.getTF()->setTfRotation(angle);
         return true;
     }
 
