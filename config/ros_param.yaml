@@ -12,10 +12,13 @@ global_costmap:
                                 # If value is all, then parse all routes
   footway_width: 2
   set_random_pose: false          # Set the random pose in a map at initialization (DEBUG param)
-  update_tf_pose_from_gps: 2      # 0 - no tf correction from gps
-                                 # 1 - Do correction only when gps accuracy is better
-                                 # 2 - Do correction always when is received correct gps message
+  update_tf_pose_from_gps: 0       # 0 - no tf correction from gps
+                                   # 1 - Do correction only when gps accuracy is better
+                                   # 2 - Do correction always when is received correct gps message
 
   use_map_rotation: false
-  matching_tf_with_map: false
-  distance_for_update_rotation: 5.0
+  matching_tf_with_map: 1         # Compute correction angle between TF pose and path
+                                  # 0 - no correction
+                                  # 1 - only one correction
+                                  # correction allways
+  distance_for_update_rotation: 3.0 # Minimal distance needed for update rotation. Param has usage, when matching_tf_with_map isn`t 0

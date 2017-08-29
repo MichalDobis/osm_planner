@@ -62,10 +62,11 @@ namespace osm_planner {
     class PathFollower{
 
     public:
-        PathFollower(osm_planner::Parser *map);
-        void addPoint(geometry_msgs::Point point);
-        void doCorrection(TfHandler *tf);
+        PathFollower(osm_planner::Parser *map, TfHandler *tf);
+        void addPoint(const sensor_msgs::NavSatFix::ConstPtr& gps);
+        bool doCorrection();
         void setMaxDistance(double maxDistance);
+        void setAngleRange(double *angle);
 
     private:
 
@@ -73,8 +74,11 @@ namespace osm_planner {
         int firstNodeID;
         int currentNodeID;
 
-        geometry_msgs::Point firstPosition;
-        geometry_msgs::Point currentPosition;
+        Parser::OSM_NODE_WITH_ID startPoint;
+        Parser::OSM_NODE_WITH_ID currentPosition;
+
+        geometry_msgs::Point firstTfPosition;
+        //geometry_msgs::Point currentPosition;
 
         bool firstNodeAdded, secondNodeAdded;
 
@@ -82,6 +86,9 @@ namespace osm_planner {
 
         double bearing;
         double maxDistance;
+        double currentDistance;
+
+        TfHandler *tf;
 
         void calculate();
         void clear();
@@ -136,13 +143,18 @@ namespace osm_planner {
         bool initialized_position;
 
         //global ros parameters
-        bool matching_tf_with_map;
+        int matching_tf_with_map;
         int update_tf_pose_from_gps;
         double interpolation_max_distance;
         double footway_width;
 
+        static const int DISABLED = 0;
+        static const int ENABLED_ONE = 1;
+        static const int ENABLED_ALLWAYS = 2;
 
         double getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps);
+        void allignTfWithPath(const sensor_msgs::NavSatFix::ConstPtr& msg);
+        void setTfFromGPS(const sensor_msgs::NavSatFix::ConstPtr& msg, double cov);
     };
 
 }

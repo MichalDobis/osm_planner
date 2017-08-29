@@ -8,7 +8,7 @@
 namespace osm_planner {
 
 
-    Localization::Localization(osm_planner::Parser *map) : tfHandler(map->getCalculator()), pathFollower(map) {
+    Localization::Localization(osm_planner::Parser *map) : tfHandler(map->getCalculator()), pathFollower(map, &tfHandler) {
 
         this->map = map;
         initialized_position = false;
@@ -57,12 +57,12 @@ namespace osm_planner {
             n.param<std::string>("robot_base_frame", base_link_frame, "/base_link");
             tfHandler.setFrames(map_frame, local_map_frame, base_link_frame);
 
-            n.param<int>("update_tf_pose_from_gps", update_tf_pose_from_gps, 2);
+            n.param<int>("update_tf_pose_from_gps", update_tf_pose_from_gps, 0);
             n.param<double>("footway_width", footway_width, 0);
 
             double distance_for_update_rotation = 5.0;
             n.param<double>("distance_for_update_rotation", distance_for_update_rotation, 5.0);
-            n.param<bool>("matching_tf_with_map", matching_tf_with_map, false);
+            n.param<int>("matching_tf_with_map", matching_tf_with_map, 0);
             pathFollower.setMaxDistance(distance_for_update_rotation);
 
             //create tf broadcaster thread
@@ -182,10 +182,22 @@ namespace osm_planner {
 
         map->publishPoint(msg->latitude, msg->longitude, Parser::CURRENT_POSITION_MARKER, cov);
 
+
+        setTfFromGPS(msg, cov);
+
+        allignTfWithPath(msg);
+
+        return true;
+    }
+
+    void Localization::setTfFromGPS(const sensor_msgs::NavSatFix::ConstPtr& msg, double cov) {
+
         switch (update_tf_pose_from_gps){
-            case 0:
+
+            case DISABLED:
                 break;
-            case 1:
+
+            case ENABLED_ONE:
                 static double last_cov = 100000;
 
                 if (cov <= last_cov){
@@ -193,19 +205,28 @@ namespace osm_planner {
                     tfHandler.improveTfPoseFromGPS(msg);
                     last_cov = cov;
                 }
+
                 break;
-            case 2:
+
+            case ENABLED_ALLWAYS:
                 tfHandler.improveTfPoseFromGPS(msg);
                 break;
         }
 
+    }
+
+    void Localization::allignTfWithPath(const sensor_msgs::NavSatFix::ConstPtr& msg) {
+
         if (matching_tf_with_map){
 
-            pathFollower.addPoint(tfHandler.getPoseFromTF(tfHandler.getMapFrame()));
-            pathFollower.doCorrection(&tfHandler);
+            static bool isCorrection = false;
+
+            if (isCorrection != true || matching_tf_with_map == ENABLED_ALLWAYS) {
+                pathFollower.addPoint(msg);
+                isCorrection = pathFollower.doCorrection();
+            }
         }
 
-        return true;
     }
 
     void Localization::setPositionFromOdom(geometry_msgs::Point point) {
@@ -298,11 +319,15 @@ namespace osm_planner {
         tf::StampedTransform transform;
 
         try {
-            listener.waitForTransform(base_link_frame, map_link, ros::Time(0), ros::Duration(1));
-            listener.lookupTransform(base_link_frame, map_link, ros::Time(0), transform);
+        //    listener.waitForTransform(base_link_frame, map_link, ros::Time(0), ros::Duration(0.5));
+           // listener.lookupTransform(base_link_frame, map_link, ros::Time(0), transform);
+
+            listener.waitForTransform(map_link, base_link_frame, ros::Time(0), ros::Duration(1));
+            listener.lookupTransform(map_link, base_link_frame, ros::Time(0), transform);
+
+            ROS_WARN("get transfrom %s", map_link.c_str());
         } catch (tf::TransformException ex) {
-            ROS_WARN("OSM planner: %s. Can't update pose from TF, for that will be use the latest source point.",
-                     ex.what());
+            ROS_WARN("OSM planner: %s. Can't update pose from TF %s", ex.what(), map_link.c_str());
         }
 
         tf::pointTFToMsg(transform.getOrigin(), point);
@@ -315,17 +340,19 @@ namespace osm_planner {
         static double diff_x = 0;
         static double diff_y = 0;
 
-        geometry_msgs::Point positionFromTF = getPoseFromTF(getLocalMapFrame());
+        geometry_msgs::Point positionFromTF = getPoseFromTF(getMapFrame());
 
-        double odom_x = positionFromTF.x;
-        double odom_y = positionFromTF.y;
+        double tf_x = positionFromTF.x;
+        double tf_y = positionFromTF.y;
 
-        double pose_from_origin_x = calculator->getCoordinateX(*gps);
-        double pose_from_origin_y = calculator->getCoordinateY(*gps);
+        double gps_x = calculator->getCoordinateX(*gps);
+        double gps_y = calculator->getCoordinateY(*gps);
 
-        diff_x = pose_from_origin_x - odom_x;
-        diff_y = pose_from_origin_y - odom_y;
+        diff_x += gps_x - tf_x;
+        diff_y += gps_y - tf_y;
 
+        ROS_INFO("TF pose : x %f y %f", tf_x, tf_y);
+        ROS_INFO("GPS pose: x %f y %f", gps_x, gps_y);
         ROS_INFO("improve tf pose from gps x:%f y:%f", diff_x, diff_y);
 
         broadcaster_mutex.lock();
@@ -347,6 +374,7 @@ namespace osm_planner {
     void TfHandler::improveTfRotation(double angleDiff) {
 
         yaw += angleDiff;
+        ROS_ERROR("yaw %f", yaw);
         tf::Quaternion q;
         q.setRPY(0, 0,  yaw);
         broadcaster_mutex.lock();
@@ -364,7 +392,7 @@ namespace osm_planner {
 
      //   std::string rotated_frame = local_map_frame + "_rotated";
 
-        ros::Rate rate(10);
+        ros::Rate rate(50);
 
         while (ros::ok()){
             broadcaster_mutex.lock();
@@ -383,12 +411,14 @@ namespace osm_planner {
     //-------PATH FOLLOWER---------------]
     // --------------------------------------
 
-    PathFollower::PathFollower(osm_planner::Parser *map) {
+    PathFollower::PathFollower(osm_planner::Parser *map, TfHandler *tf) {
 
         this->map = map;
+        this->tf = tf;
         firstNodeAdded = false;
         secondNodeAdded = false;
         angleDiff = 0;
+        currentDistance = 0;
     }
 
     void PathFollower::setMaxDistance(double maxDistance) {
@@ -396,25 +426,36 @@ namespace osm_planner {
         this->maxDistance = maxDistance;
     }
 
-    void PathFollower::addPoint(geometry_msgs::Point point) {
+    void PathFollower::addPoint(const sensor_msgs::NavSatFix::ConstPtr& gps) {
 
         static int lastNodeID;
 
-        int nodeID = map->getNearestPointXY(point.x, point.y);
-
-        this->currentPosition = point;
-        this->currentNodeID = nodeID;
+      //  this->currentPosition = tf->getPoseFromTF(tf->getMapFrame());
+       // this->currentNodeID = map->getNearestPointXY(currentPosition.x, currentPosition.y);
+        currentPosition.node.latitude = gps->latitude;
+        currentPosition.node.longitude = gps->longitude;
+        currentPosition.id = map->getNearestPoint(gps->latitude, gps->longitude);
 
         if (!firstNodeAdded){
 
-            this->firstPosition = point;
-            this->firstNodeID = nodeID;
-            lastNodeID = nodeID;
+           startPoint = currentPosition;
+
+          //  this->firstPosition.x = map->getCalculator()->getCoordinateX(map->getNodeByID(nodeID));
+           // this->firstPosition.y = map->getCalculator()->getCoordinateY(map->getNodeByID(nodeID));
+
+          //  this->firstPosition = currentPosition;
+
+            this->firstTfPosition = tf->getPoseFromTF(tf->getMapFrame());
+
+            //this->firstNodeID = currentNodeID;
+            //lastNodeID = currentNodeID;
+
+            lastNodeID = currentPosition.id;
             firstNodeAdded = true;
             return;
         }
 
-        if (lastNodeID == nodeID) return;
+        if (lastNodeID == currentPosition.id) return;
 
 
         calculate();
@@ -422,45 +463,79 @@ namespace osm_planner {
 
     void PathFollower::calculate() {
 
+        static double angleOnStart = 0;
+
         //calculate angle between current node and first node
-        double pathAngle = map->getCalculator()->getBearing(map->getNodeByID(firstNodeID), map->getNodeByID(currentNodeID));
+        //double pathAngle = map->getCalculator()->getBearing(map->getNodeByID(firstNodeID), map->getNodeByID(currentNodeID));
+        //double pathDist = map->getCalculator()->getDistance(map->getNodeByID(firstNodeID), map->getNodeByID(currentNodeID));
+
+        bearing = map->getCalculator()->getBearing(map->getNodeByID(startPoint.id), map->getNodeByID(currentPosition.id));
+        double pathDist = map->getCalculator()->getDistance(map->getNodeByID(startPoint.id), map->getNodeByID(currentPosition.id));
 
         if (!secondNodeAdded){
 
-            bearing = pathAngle;
+            angleOnStart = bearing;
             secondNodeAdded = true;
             return;
         }
 
-        if (fabs(pathAngle - bearing) > 0.01) {
+        if (fabs(bearing - angleOnStart) > 0.01) {
             clear();
             return;
         }
 
-        double pathDist = map->getCalculator()->getDistance(map->getNodeByID(firstNodeID), map->getNodeByID(currentNodeID));
-        double odomDist = sqrt(pow(currentPosition.x - firstPosition.x, 2.0) + pow(currentPosition.y - firstPosition.y, 2.0));
-        double odomAngle = atan2(currentPosition.x - firstPosition.x, currentPosition.y - firstPosition.y);
 
-        angleDiff = pathAngle - odomAngle;
+        geometry_msgs::Point currentTfPosition = tf->getPoseFromTF(tf->getMapFrame());
 
-        ROS_WARN("calculating: Odom dist %f, angle %f. Path dist %f, angle %f", odomDist, odomAngle, pathDist, pathAngle);
+        double tfDist = sqrt(pow(currentTfPosition.x - firstTfPosition.x, 2.0) + pow(currentTfPosition.y - firstTfPosition.y, 2.0));
+     //   double tfAngle = atan2(currentTfPosition.x - firstTfPosition.x, currentTfPosition.y - firstTfPosition.y);
+      //  double tfAngle = atan2( firstTfPosition.x - currentTfPosition.x,  firstTfPosition.y - currentTfPosition.y);
+       // double tfAngle = atan2(firstTfPosition.y - currentTfPosition.y,  firstTfPosition.x - currentTfPosition.x);
+        double tfAngle = atan2( currentTfPosition.y - firstTfPosition.y, currentTfPosition.x - firstTfPosition.x);
+
+       // map->publishPoint(currentTfPosition, Parser::TARGET_POSITION_MARKER, 1);
+        setAngleRange(&bearing);
+        setAngleRange(&tfAngle);
+        angleDiff = bearing - tfAngle;
+
+        ROS_WARN("calculating: Odom dist %f, angle %f. Path dist %f, angle %f", tfDist, tfAngle * 180 / M_PI, pathDist, bearing  * 180 / M_PI);
+        ROS_INFO("x %f y %f", currentTfPosition.x, currentTfPosition.y);
       return;
 
     }
 
-    void PathFollower::doCorrection(TfHandler *tf) {
+    void PathFollower::setAngleRange(double *angle) {
 
-        double pathDist = map->getCalculator()->getDistance(map->getNodeByID(firstNodeID), map->getNodeByID(currentNodeID));
-        if (pathDist > maxDistance) {
-            ROS_ERROR("update correction %f", angleDiff);
+        static const double PI_2 = 2*M_PI;
+        if (angle[0] < 0)
+            angle[0] += PI_2;
+        if (angle[0] > PI_2)
+            angle[0] -= PI_2;
+    }
+
+    bool PathFollower::doCorrection() {
+
+        if (!firstNodeAdded || !secondNodeAdded) return false;
+
+      //  double pathDist = map->getCalculator()->getDistance(map->getNodeByID(firstNodeID), map->getNodeByID(currentNodeID));
+        double dist = map->getCalculator()->getDistance(startPoint.node, currentPosition.node);
+        if (dist > maxDistance) {
+            ROS_ERROR("update correction %f", angleDiff*180 / M_PI);
             tf->improveTfRotation(angleDiff);
+
+            //tf->setTfRotation(bearing);
             clear();
+            return true;
         }
+
+        return false;
     }
 
     void PathFollower::clear(){
 
         firstNodeAdded = false;
         secondNodeAdded = false;
+        currentDistance = 0;
     }
+
 }
