@@ -1,4 +1,4 @@
-global_costmap:
+Planner:
   global_frame: world
   local_map_frame: map    #Frame has usage, when param update_origin_pose is true
   robot_base_frame: base_link

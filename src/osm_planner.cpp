@@ -18,14 +18,14 @@ namespace osm_planner {
 
 
     Planner::Planner() :
-            osm(), dijkstra(), localization(&osm) {
+            osm(), dijkstra(), localization(&osm), n("~/Planner") {
 
         initialized_ros = false;
         initialize();
     }
 
     Planner::Planner(std::string name, costmap_2d::Costmap2DROS* costmap_ros) :
-            osm(), dijkstra(), localization(&osm) {
+            osm(), dijkstra(), localization(&osm), n("~"+name) {
 
         initialized_ros = false;
         initialize(name, costmap_ros);
@@ -46,8 +46,6 @@ namespace osm_planner {
     void Planner::initialize(){
 
         if (!initialized_ros) {
-            //init ros topics and services
-            ros::NodeHandle n("~/global_costmap");
 
             //source of map
             std::string file = "skuska.osm";
