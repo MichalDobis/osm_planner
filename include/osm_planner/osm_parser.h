@@ -174,6 +174,22 @@ namespace osm_planner {
              //   return cos(bearing + offset)*dist;
             };
 
+            template<class N1, class N2>  static double getCoordinateX(N1 node1, N2 node2){
+
+                /*  double dLon = node2.longitude * DEG2RAD - node1.longitude * DEG2RAD;
+                  double latAverage = (node1.latitude + node2.latitude) / 2;
+                  double a = cos(latAverage * DEG2RAD) * cos(latAverage * DEG2RAD) *
+                             sin(dLon / 2) * sin(dLon / 2);
+                  double dist = R * 2 * atan2(sqrt(a), sqrt(1 - a));
+
+                  return node1.longitude < node2.longitude ? dist : -dist;*/
+
+                double dist = getDistance(node1, node2);
+                double bearing  = getBearing(node1, node2);
+                return sin(bearing)*dist;
+                //   return cos(bearing + offset)*dist;
+            };
+
             template<class N> double getCoordinateY(N node){
 
                 /*static double R = 6371e3;
@@ -187,6 +203,21 @@ namespace osm_planner {
                 double bearing  = getBearing(originPoint, node);
                 return cos(bearing + offset)*dist;
                // return sin(bearing + offset)*dist;
+            };
+
+            template<class N1, class N2> static double getCoordinateY(N1 node1, N2 node2){
+
+                /*static double R = 6371e3;
+                double dLat = node2.latitude * DEG2RAD - node1.latitude * DEG2RAD;
+                double a = sin(dLat / 2) * sin(dLat / 2);
+                double dist = R * 2 * atan2(sqrt(a), sqrt(1 - a));
+
+                return node1.latitude < node2.latitude ? dist : -dist;*/
+
+                double dist = getDistance(node1, node2);
+                double bearing  = getBearing(node1, node2);
+                return cos(bearing)*dist;
+                // return sin(bearing + offset)*dist;
             };
 
         private:

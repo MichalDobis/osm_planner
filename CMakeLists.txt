@@ -111,7 +111,7 @@ add_service_files(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES osm_planner
-  CATKIN_DEPENDS roscpp tinyxml message_runtime
+  CATKIN_DEPENDS roscpp message_runtime
   DEPENDS system_lib TinyXML
 )
 
