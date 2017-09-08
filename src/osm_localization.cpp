@@ -67,16 +67,16 @@ namespace osm_planner {
             pathFollower.setMaxDistance(distance_for_update_rotation);
 
             //create tf broadcaster thread
-            bool use_map_rotation;
-            n.param<bool>("use_map_rotation", use_map_rotation, true);
+            bool use_tf;
+            n.param<bool>("use_tf_broadcaster", use_tf, true);
 
-            system("rosnode kill /move_base/osm_helper");
 
-            if (!use_map_rotation)
-              tfHandler.initThread();
+            if (use_tf) {
+                system("rosnode kill /move_base/osm_helper");
+                tfHandler.initThread();
+            }
 
             initialized_ros = true;
-
         }
 
     }
@@ -126,17 +126,25 @@ namespace osm_planner {
     //-------------------------------------------------------------//
     //--------Initialize pose from random gen - for debug----------//
     //-------------------------------------------------------------//
-    void Localization::initializePos() {
+    void Localization::initializePos(bool random) {
 
         //if position is initialized then do nothing
         if (initialized_position)
             return;
 
+
         map->parse();
+        if (random){
         map->setStartPoint();
+            source.geoPoint = map->getCalculator()->getOrigin();
+
+        } else{
+            Parser::OSM_NODE origin = map->getNodeByID(0);
+            map->getCalculator()->setOrigin(origin.latitude, origin.longitude);
+            source.geoPoint = origin;
+        }
 
         //Save the position for path planning
-        source.geoPoint = map->getCalculator()->getOrigin();
         source.id = 0;
         source.cartesianPoint.pose.position.x = 0;
         source.cartesianPoint.pose.position.y = 0;

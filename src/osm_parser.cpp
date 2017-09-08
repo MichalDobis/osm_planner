@@ -19,7 +19,7 @@ namespace osm_planner {
 
    void Parser::initialize(){
 
-        ros::NodeHandle n("~/global_costmap");
+        ros::NodeHandle n("~/Planner");
 
         //get the parameters
         n.param<std::string>("global_frame", map_frame, "/world");
@@ -65,7 +65,7 @@ namespace osm_planner {
         hRootNode = TiXmlHandle(nodeElement);
         hRootWay = TiXmlHandle(wayElement);
 
-        ros::NodeHandle n("~/global_costmap");
+        ros::NodeHandle n("~/Planner");
         std::vector<std::string> types_of_ways;
         n.getParam("filter_of_ways",types_of_ways);
 

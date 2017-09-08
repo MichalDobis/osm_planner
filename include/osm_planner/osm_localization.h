@@ -120,7 +120,7 @@ namespace osm_planner {
         //Before start make plan, this function must be call
         void initializePos(double lat, double lon, double bearing);
         void initializePos(double lat, double lon);
-        void initializePos();
+        void initializePos(bool random);
 
         //update pose
         bool setPositionFromGPS(const sensor_msgs::NavSatFix::ConstPtr& msg);        //from gps

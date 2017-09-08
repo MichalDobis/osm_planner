@@ -6,7 +6,7 @@
 
     <!-- pkg="osm_planner" type="osm_helper" name="osm_helper" output="screen"/-->
 
-  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen" required="true">
      <param name="base_global_planner" value="osm_planner/Planner"/>
      <param name="controller_frequency" value="10"/>
      <param name="global_costmap/filepath" value="$(arg filepath)"/>

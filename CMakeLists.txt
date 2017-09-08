@@ -111,7 +111,7 @@ add_service_files(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES osm_planner
-  CATKIN_DEPENDS roscpp tinyxml message_runtime
+  CATKIN_DEPENDS roscpp message_runtime
   DEPENDS system_lib TinyXML
 )
 
@@ -123,6 +123,12 @@ catkin_package(
 include_directories(
  include ${catkin_INCLUDE_DIRS} ${TinyXML_INCLUDE_DIRS}
 )
+add_library(osm_parser
+        src/osm_parser.cpp)
+target_link_libraries(osm_parser
+        ${catkin_LIBRARIES}
+        )
+add_dependencies(osm_parser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ library
 add_library(osm_planner
@@ -135,6 +141,7 @@ add_library(osm_planner
 target_link_libraries(osm_planner
         ${catkin_LIBRARIES}
         )
+
 add_dependencies(osm_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(osm_planner_node src/osm_planner_node.cpp)
