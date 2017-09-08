@@ -20,6 +20,10 @@
 
 namespace osm_planner {
 
+    const static int FROM_SERVICE = 0;
+    const static int FIRST_POINT = 1;
+    const static int RANDOM_POINT = 2;
+
     class Planner: public nav_core::BaseGlobalPlanner{
     public:
 
@@ -66,7 +70,7 @@ namespace osm_planner {
 
         bool initFromGpsCallback;
 
-        bool use_map_rotation;
+      //  bool use_map_rotation;
         /*Publisher*/
         ros::Publisher shortest_path_pub;
      //   ros::Publisher utm_init_pub;

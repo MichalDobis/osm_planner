@@ -1,22 +1,30 @@
 global_costmap:
-  global_frame: world
-  local_map_frame: map    #Frame has usage, when param update_origin_pose is true
+  global_frame: map
   robot_base_frame: base_link
 
   #names of topics
   topic_shortest_path: "shortest_path"
   topic_gps_name: "/fix"
 
+  # Parser's params
   interpolation_max_distance: 2.0 # Max distance between two nodes of orientated graph
   filter_of_ways: ["all"]         # Filter for parser. Parse only routes, which have value on the list
                                 # If value is all, then parse all routes
+
+  set_origin_pose: 1          # Set the origin pose on the map for cartesian calculator
+                              # 0 - origin pose from service
+                              # 1 - origin pose from 1. point on the map
+                              # 2 - random origin pose
   footway_width: 2
-  set_random_pose: false          # Set the random pose in a map at initialization (DEBUG param)
+
+
+  use_tf_broadcaster: false
+ # This params has usage, when param use_tf_broadcaster is true
+  local_map_frame: map    #TF frame for correction
   update_tf_pose_from_gps: 0       # 0 - no tf correction from gps
                                    # 1 - Do correction only when gps accuracy is better
                                    # 2 - Do correction always when is received correct gps message
 
-  use_map_rotation: false
   matching_tf_with_map: 1         # Compute correction angle between TF pose and path
                                   # 0 - no correction
                                   # 1 - only one correction

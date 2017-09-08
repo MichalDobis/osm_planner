@@ -60,7 +60,7 @@ namespace osm_planner {
             std::string topic_gps_name;
             n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
 
-            n.param<bool>("use_map_rotation", use_map_rotation, true);
+           // n.param<bool>("use_map_rotation", use_map_rotation, true);
             initFromGpsCallback = false;
 
             //subscribers
@@ -83,12 +83,20 @@ namespace osm_planner {
             localization.initialize();
 
             //Debug param
-            bool set_random_pose;
-            n.param<bool>("set_random_pose", set_random_pose, false);
-            if (set_random_pose)
-                localization.initializePos();
-            else
-                ROS_WARN("OSM planner: Waiting for init position, please call init service...");
+            int set_origin_pose;
+            n.param<int>("set_origin_pose", set_origin_pose, false);
+            Parser::OSM_NODE origin;
+            switch (set_origin_pose) {
+                case FROM_SERVICE:
+                    ROS_WARN("OSM planner: Waiting for init position, please call init service...");
+                    break;
+                case FIRST_POINT:
+                    localization.initializePos(false);
+                    break;
+                case RANDOM_POINT:
+                    localization.initializePos(true);
+                    break;
+            }
         }
     }
 
@@ -300,10 +308,12 @@ namespace osm_planner {
 
         // if isn't set the flag update_tf_pose_from_gps, then set rotation of map
         // else set rotation of tf
-       if  (use_map_rotation) osm.getCalculator()->setOffset(req.bearing);
-        else localization.getTF()->improveTfRotation(req.bearing);
+      // if  (use_map_rotation) osm.getCalculator()->setOffset(req.bearing);
+       // else localization.getTF()->improveTfRotation(req.bearing);
 
-     //   localization.getTF()->setTfRotation(req.bearing);
+
+
+        localization.getTF()->setTfRotation(req.bearing);
         return true;
     }
 

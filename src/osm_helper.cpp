@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
         tf::Quaternion q;
         q.setRPY(0,0,0);
         transform.setRotation(q);
-        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "/base_link"));
+        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/map", "/base_link"));
 
         rate.sleep();
     }
