@@ -65,10 +65,6 @@ namespace osm_planner {
         hRootNode = TiXmlHandle(nodeElement);
         hRootWay = TiXmlHandle(wayElement);
 
-        ros::NodeHandle n("~/Planner");
-        std::vector<std::string> types_of_ways;
-        n.getParam("filter_of_ways",types_of_ways);
-
         createWays(&hRootWay, &hRootNode, types_of_ways);
         createNodes(&hRootNode);
 
@@ -310,6 +306,11 @@ namespace osm_planner {
         this->xml = xml;
         //parse();
    }
+
+    void Parser::setTypeOfWays(std::vector<std::string> types){
+
+        this->types_of_ways = types;
+    }
 
    void Parser::setInterpolationMaxDistance(double param) {
         this->interpolation_max_distance = param;

@@ -66,6 +66,19 @@ namespace osm_planner {
             n.param<int>("matching_tf_with_map", matching_tf_with_map, 0);
             pathFollower.setMaxDistance(distance_for_update_rotation);
 
+            std::string topic_gps_name;
+            n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
+
+            //subscribers
+            gps_sub = n.subscribe(topic_gps_name, 1, &Localization::gpsCallback, this);
+
+            //publisher
+            gps_odom_pub = n.advertise<nav_msgs::Odometry>("gps_odom", 10);
+
+            //services
+            init_service = n.advertiseService("init", &Localization::initCallback, this);
+            computeBearing = n.advertiseService("compute_bearing", &Localization::computeBearingCallback, this);
+
             //create tf broadcaster thread
             bool use_tf;
             n.param<bool>("use_tf_broadcaster", use_tf, true);
@@ -76,6 +89,7 @@ namespace osm_planner {
                 tfHandler.initThread();
             }
 
+            initFromGpsCallback = false;
             initialized_ros = true;
         }
 
@@ -278,7 +292,6 @@ namespace osm_planner {
             ROS_WARN("OSM planner: The coordinates is %f m out of the way", dist);
         }
 
-
         return dist;
     }
 
@@ -298,6 +311,92 @@ namespace osm_planner {
 
         return dist;
     }
+
+    //=========================================//
+    //================== Callbacks ============//
+    //=========================================//
+
+   bool Localization::initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
+
+        //if longitude and latitude are incorrect then get initalize pose from gps topic
+        if (req.longitude <= 0 && req.latitude <= 0 ) initFromGpsCallback = true;
+        else initializePos(req.latitude, req.longitude);
+
+        // if isn't set the flag update_tf_pose_from_gps, then set rotation of map
+        // else set rotation of tf
+        // if  (use_map_rotation) osm.getCalculator()->setOffset(req.bearing);
+        // else localization.getTF()->improveTfRotation(req.bearing);
+
+        tfHandler.setTfRotation(req.bearing);
+        return true;
+    }
+
+    bool Localization::computeBearingCallback(osm_planner::computeBearing::Request &req, osm_planner::computeBearing::Response &res){
+
+        if (!isInitialized())
+            return true;
+
+        static osm_planner::Parser::OSM_NODE firstPoint;
+        static bool firstPointAdded = false;
+
+        if (!firstPointAdded){
+            firstPoint.longitude = req.longitude;
+            firstPoint.latitude = req.latitude;
+            res.message = "Added first point, please move robot forward and call service again";
+            res.bearing = 0;
+            firstPointAdded  = true;
+            return true;
+        } else{
+
+            osm_planner::Parser::OSM_NODE secondPoint;
+            secondPoint.longitude = req.longitude;
+            secondPoint.latitude = req.latitude;
+            double angle = osm_planner::Parser::Haversine::getBearing(firstPoint, secondPoint);
+            res.message = "Bearing was calculated";
+            firstPointAdded = false;
+            tfHandler.setTfRotation(angle);
+            res.bearing = angle;
+            return true;
+        }
+    }
+
+
+    void Localization::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
+
+        if (msg->status.status == sensor_msgs::NavSatStatus::STATUS_NO_FIX)
+            return;
+
+        //If is request for initiliaze pose from gps callback
+        if (initFromGpsCallback) {
+
+            initFromGpsCallback = false;
+            initializePos(msg->latitude, msg->longitude);
+
+        }
+
+        setPositionFromGPS(msg);
+
+        //gps to odom publisher
+        nav_msgs::Odometry odom;
+        odom.header.stamp = ros::Time::now();
+        odom.header.frame_id = tfHandler.getBaseLinkFrame();
+        odom.child_frame_id = tfHandler.getMapFrame();
+
+        odom.pose.pose.position.x = getCurrentPosition()->cartesianPoint.pose.position.x;
+        odom.pose.pose.position.y = getCurrentPosition()->cartesianPoint.pose.position.y;
+        odom.pose.pose.position.z = 0;
+
+        odom.pose.pose.orientation.x = 0;
+        odom.pose.pose.orientation.y = 0;
+        odom.pose.pose.orientation.z = 0;
+        odom.pose.pose.orientation.w = 1;
+
+        gps_odom_pub.publish(odom);
+    }
+
+    //=========================================//
+    //================== TF Handler ============//
+    //=========================================//
 
     TfHandler::TfHandler(osm_planner::Parser::Haversine *calculator) {
 

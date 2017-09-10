@@ -63,6 +63,7 @@ add_service_files(
    FILES
         newTarget.srv
         cancelledPoint.srv
+        computeBearing.srv
     )
 
 ## Generate actions in the 'action' folder

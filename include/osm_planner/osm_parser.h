@@ -77,6 +77,7 @@ namespace osm_planner {
         void setStartPoint(double latitude, double longitude, double bearing); //set the zero point in cartezian coordinates
         void setStartPoint();
         void setNewMap(std::string xml);
+        void setTypeOfWays(std::vector<std::string> types);
 
         void setInterpolationMaxDistance(double param);
 
@@ -239,6 +240,8 @@ namespace osm_planner {
 
         //map source
         std::string xml;
+
+        std::vector<std::string> types_of_ways;
 
         //publishers
         ros::Publisher position_marker_pub;
