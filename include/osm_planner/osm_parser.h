@@ -52,7 +52,7 @@ namespace osm_planner {
         Parser();
 
         //start parsing
-        void parse();
+        void parse(bool onlyFirstElement = false);
 
         //publishing functions
         void publishPoint(int pointID, int marker_type, double radius, geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromYaw(0));
@@ -267,10 +267,10 @@ namespace osm_planner {
 
         void createMarkers();
 
-        void createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::vector<std::string> osm_value);
+        void createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::vector<std::string> osm_value, bool onlyFirstElement = false);
         bool isSelectedWay(TiXmlElement *tag, std::vector<std::string> values);
 
-        void createNodes(TiXmlHandle *hRootNode);
+        void createNodes(TiXmlHandle *hRootNode, bool onlyFirstElement = false);
 
         void createNetwork();
 
