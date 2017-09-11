@@ -20,6 +20,9 @@
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/NavSatFix.h>
 
+#include <osm_planner/newTarget.h>
+#include <osm_planner/computeBearing.h>
+
 
 namespace osm_planner {
 
@@ -141,6 +144,8 @@ namespace osm_planner {
 
         bool initialized_ros;
         bool initialized_position;
+        bool initFromGpsCallback;
+
 
         //global ros parameters
         int matching_tf_with_map;
@@ -151,6 +156,21 @@ namespace osm_planner {
         static const int DISABLED = 0;
         static const int ENABLED_ONE = 1;
         static const int ENABLED_ALLWAYS = 2;
+
+        /* Subscribers */
+        ros::Subscriber gps_sub;
+
+        /* Topics */
+        ros::Publisher gps_odom_pub; //debug topic - calculate odometry from gps
+
+        /* Services */
+        ros::ServiceServer init_service;
+        ros::ServiceServer computeBearing;
+
+        //callbacks
+        bool initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
+        bool computeBearingCallback(osm_planner::computeBearing::Request &req, osm_planner::computeBearing::Response &res);
+        void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg);
 
         double getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps);
         void allignTfWithPath(const sensor_msgs::NavSatFix::ConstPtr& msg);

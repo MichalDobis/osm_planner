@@ -36,7 +36,7 @@ namespace osm_planner {
 
     /**PUBLISHING FUNCTIONS**/
 
-    void Parser::parse() {
+    void Parser::parse(bool onlyFirstElement) {
 
         ros::Time start_time = ros::Time::now();
         TiXmlDocument doc(xml);
@@ -65,12 +65,10 @@ namespace osm_planner {
         hRootNode = TiXmlHandle(nodeElement);
         hRootWay = TiXmlHandle(wayElement);
 
-        ros::NodeHandle n("~/Planner");
-        std::vector<std::string> types_of_ways;
-        n.getParam("filter_of_ways",types_of_ways);
+        createWays(&hRootWay, &hRootNode, types_of_ways, onlyFirstElement);
+        createNodes(&hRootNode, onlyFirstElement);
 
-        createWays(&hRootWay, &hRootNode, types_of_ways);
-        createNodes(&hRootNode);
+        if (onlyFirstElement) return;
 
         createNetwork();
     }
@@ -311,6 +309,11 @@ namespace osm_planner {
         //parse();
    }
 
+    void Parser::setTypeOfWays(std::vector<std::string> types){
+
+        this->types_of_ways = types;
+    }
+
    void Parser::setInterpolationMaxDistance(double param) {
         this->interpolation_max_distance = param;
    }
@@ -352,7 +355,7 @@ namespace osm_planner {
 // osm_key = "highway"
 // osm_value = "footway"
 // will selected only footways
-   void Parser::createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::vector<std::string> osm_value) {
+   void Parser::createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::vector<std::string> osm_value, bool onlyFirstElement) {
 
         //ADDED for interpolation
         //------------------------------------------
@@ -393,6 +396,7 @@ namespace osm_planner {
                     wayElement->Attribute("id", &wayTmp.id);
                     getNodesInWay(wayElement, &wayTmp, nodes); //finding all nodes located in selected way
                     ways.push_back(wayTmp);
+                    if (onlyFirstElement) return;
                     break;
                 }
                 tag = tag->NextSiblingElement("tag");
@@ -529,7 +533,7 @@ namespace osm_planner {
 
 
    //parse all osm nodes and select nodes located in ways (footways)
-   void Parser::createNodes(TiXmlHandle *hRootNode) {
+   void Parser::createNodes(TiXmlHandle *hRootNode, bool onlyFirstElement) {
 
         nodes.clear();
         nodes.resize(table.size());
@@ -547,6 +551,7 @@ namespace osm_planner {
 
             nodeElement->Attribute("lat", &nodes[ret].latitude);
             nodeElement->Attribute("lon", &nodes[ret].longitude);
+            if (onlyFirstElement) return;
         }
 
         //ADDED for interpolation

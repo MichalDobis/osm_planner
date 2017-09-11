@@ -52,28 +52,20 @@ namespace osm_planner {
             n.getParam("osm_map_path", file);
             osm.setNewMap(file);
 
+            std::vector<std::string> types_of_ways;
+            n.getParam("filter_of_ways",types_of_ways);
+            osm.setTypeOfWays(types_of_ways);
+
             std::string topic_name;
             n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path");
 
-            std::string topic_gps_name;
-            n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
-
-           // n.param<bool>("use_map_rotation", use_map_rotation, true);
-            initFromGpsCallback = false;
-
-            //subscribers
-            gps_sub = n.subscribe(topic_gps_name, 1, &Planner::gpsCallback, this);
-
             //publishers
             shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
-            gps_odom_pub = n.advertise<nav_msgs::Odometry>("gps_odom", 10);
 
           //  utm_init_pub = n.advertise<sensor_msgs::NavSatFix>("/utm/init", 10);
 
             //services
-            init_service = n.advertiseService("init", &Planner::initCallback, this);
-            computeBearing = n.advertiseService("compute_bearing", &Planner::computeBearingCallback, this);
-            cancel_point_service = n.advertiseService("cancel_point", &Planner::cancelPointCallback, this);
+             cancel_point_service = n.advertiseService("cancel_point", &Planner::cancelPointCallback, this);
             drawing_route_service = n.advertiseService("draw_route", &Planner::drawingRouteCallback, this);
 
             initialized_ros = true;
@@ -297,74 +289,11 @@ namespace osm_planner {
         return true;
     }
 
-
-    bool Planner::initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
-
-        //if longitude and latitude are incorrect then get initalize pose from gps topic
-        if (req.longitude <= 0 && req.latitude <= 0 ) initFromGpsCallback = true;
-        else localization.initializePos(req.latitude, req.longitude);
-
-        // if isn't set the flag update_tf_pose_from_gps, then set rotation of map
-        // else set rotation of tf
-      // if  (use_map_rotation) osm.getCalculator()->setOffset(req.bearing);
-       // else localization.getTF()->improveTfRotation(req.bearing);
-
-
-
-        localization.getTF()->setTfRotation(req.bearing);
-        return true;
-    }
-
-    bool Planner::computeBearingCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res){
-
-        if (!localization.isInitialized())
-            return true;
-
-        osm_planner::Parser::OSM_NODE currentPose = localization.getCurrentPosition()->geoPoint;
-        double angle = osm.getCalculator()->getBearing(currentPose);
-        ROS_WARN("set bearing %f", angle);
-        localization.getTF()->setTfRotation(angle);
-        return true;
-    }
-
     bool Planner::drawingRouteCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
 
         osm.publishRouteNetwork();
         shortest_path_pub.publish(path);
         return true;
-    }
-
-    void Planner::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg) {
-
-        if (msg->status.status == sensor_msgs::NavSatStatus::STATUS_NO_FIX)
-            return;
-
-        //If is request for initiliaze pose from gps callback
-        if (initFromGpsCallback) {
-
-            initFromGpsCallback = false;
-            localization.initializePos(msg->latitude, msg->longitude);
-
-        }
-
-        localization.setPositionFromGPS(msg);
-
-        //gps to odom publisher
-        nav_msgs::Odometry odom;
-        odom.header.stamp = ros::Time::now();
-        odom.header.frame_id = localization.getTF()->getBaseLinkFrame();
-        odom.child_frame_id = localization.getTF()->getMapFrame();
-
-        odom.pose.pose.position.x = localization.getCurrentPosition()->cartesianPoint.pose.position.x;
-        odom.pose.pose.position.y = localization.getCurrentPosition()->cartesianPoint.pose.position.y;
-        odom.pose.pose.position.z = 0;
-
-        odom.pose.pose.orientation.x = 0;
-        odom.pose.pose.orientation.y = 0;
-        odom.pose.pose.orientation.z = 0;
-        odom.pose.pose.orientation.w = 1;
-
-        gps_odom_pub.publish(odom);
     }
 
 }

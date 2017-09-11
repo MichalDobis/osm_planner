@@ -69,32 +69,21 @@ namespace osm_planner {
 
         POINT target;
 
-        bool initFromGpsCallback;
-
       //  bool use_map_rotation;
         /*Publisher*/
         ros::Publisher shortest_path_pub;
      //   ros::Publisher utm_init_pub;
 
-        /* Subscribers */
-        ros::Subscriber gps_sub;
-
         //msgs for shortest path
         nav_msgs::Path path;
-        ros::Publisher gps_odom_pub; //debug topic - calculate odometry from gps
 
         /* Services */
-        ros::ServiceServer init_service;
-        ros::ServiceServer computeBearing;
         ros::ServiceServer cancel_point_service;
         ros::ServiceServer drawing_route_service;
 
         //callbacks
-        bool initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
-        bool computeBearingCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
         bool cancelPointCallback(osm_planner::cancelledPoint::Request &req, osm_planner::cancelledPoint::Response &res);
         bool drawingRouteCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
-        void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg);
 
     };
 }

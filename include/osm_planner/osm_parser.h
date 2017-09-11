@@ -52,7 +52,7 @@ namespace osm_planner {
         Parser();
 
         //start parsing
-        void parse();
+        void parse(bool onlyFirstElement = false);
 
         //publishing functions
         void publishPoint(int pointID, int marker_type, double radius, geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromYaw(0));
@@ -77,6 +77,7 @@ namespace osm_planner {
         void setStartPoint(double latitude, double longitude, double bearing); //set the zero point in cartezian coordinates
         void setStartPoint();
         void setNewMap(std::string xml);
+        void setTypeOfWays(std::vector<std::string> types);
 
         void setInterpolationMaxDistance(double param);
 
@@ -240,6 +241,8 @@ namespace osm_planner {
         //map source
         std::string xml;
 
+        std::vector<std::string> types_of_ways;
+
         //publishers
         ros::Publisher position_marker_pub;
         ros::Publisher target_marker_pub;
@@ -264,10 +267,10 @@ namespace osm_planner {
 
         void createMarkers();
 
-        void createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::vector<std::string> osm_value);
+        void createWays(TiXmlHandle *hRootWay, TiXmlHandle *hRootNode, std::vector<std::string> osm_value, bool onlyFirstElement = false);
         bool isSelectedWay(TiXmlElement *tag, std::vector<std::string> values);
 
-        void createNodes(TiXmlHandle *hRootNode);
+        void createNodes(TiXmlHandle *hRootNode, bool onlyFirstElement = false);
 
         void createNetwork();
 
