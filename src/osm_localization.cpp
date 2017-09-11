@@ -66,19 +66,23 @@ namespace osm_planner {
             n.param<int>("matching_tf_with_map", matching_tf_with_map, 0);
             pathFollower.setMaxDistance(distance_for_update_rotation);
 
-            std::string topic_gps_name;
-            n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
+            bool use_localization_callbacks;
+            n.param<bool>("use_localization", use_localization_callbacks, true);
 
-            //subscribers
-            gps_sub = n.subscribe(topic_gps_name, 1, &Localization::gpsCallback, this);
+            if (use_localization_callbacks) {
+                std::string topic_gps_name;
+                n.param<std::string>("topic_gps_name", topic_gps_name, "/position");
 
-            //publisher
-            gps_odom_pub = n.advertise<nav_msgs::Odometry>("gps_odom", 10);
+                //subscribers
+                gps_sub = n.subscribe(topic_gps_name, 1, &Localization::gpsCallback, this);
 
-            //services
-            init_service = n.advertiseService("init", &Localization::initCallback, this);
-            computeBearing = n.advertiseService("compute_bearing", &Localization::computeBearingCallback, this);
+                //publisher
+                gps_odom_pub = n.advertise<nav_msgs::Odometry>("gps_odom", 10);
 
+                //services
+                init_service = n.advertiseService("init", &Localization::initCallback, this);
+                computeBearing = n.advertiseService("compute_bearing", &Localization::computeBearingCallback, this);
+            }
             //create tf broadcaster thread
             bool use_tf;
             n.param<bool>("use_tf_broadcaster", use_tf, true);
@@ -145,7 +149,6 @@ namespace osm_planner {
         //if position is initialized then do nothing
         if (initialized_position)
             return;
-
 
         map->parse();
         if (random){
