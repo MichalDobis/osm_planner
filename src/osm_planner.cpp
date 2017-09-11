@@ -49,7 +49,7 @@ namespace osm_planner {
 
             //source of map
             std::string file = "skuska.osm";
-            n.getParam("filepath", file);
+            n.getParam("osm_map_path", file);
             osm.setNewMap(file);
 
             std::string topic_name;
