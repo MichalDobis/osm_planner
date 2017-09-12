@@ -1,5 +1,5 @@
 Planner:
-  global_frame: world
+  global_frame: map
   local_map_frame: map    #Frame has usage, when param update_origin_pose is true
   robot_base_frame: base_link
 
@@ -12,13 +12,19 @@ Planner:
   filter_of_ways: ["all"]         # Filter for parser. Parse only routes, which have value on the list
                                 # If value is all, then parse all routes
 
-  set_origin_pose: 1          # Set the origin pose on the map for cartesian calculator
+  set_origin_pose: 3          # Set the origin pose on the map for cartesian calculator
                               # 0 - origin pose from service
                               # 1 - origin pose from 1. point on the map
                               # 2 - random origin pose
+                              # 3 - origin pose from param
+
+  origin_latitude: 48.1532431
+  origin_longitude: 17.0743601
+
   footway_width: 2
 
 
+  use_localization: false
   use_tf_broadcaster: false
  # This params has usage, when param use_tf_broadcaster is true
   local_map_frame: map    #TF frame for correction

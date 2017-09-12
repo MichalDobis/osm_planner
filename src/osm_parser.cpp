@@ -65,6 +65,7 @@ namespace osm_planner {
         hRootNode = TiXmlHandle(nodeElement);
         hRootWay = TiXmlHandle(wayElement);
 
+
         createWays(&hRootWay, &hRootNode, types_of_ways, onlyFirstElement);
         createNodes(&hRootNode, onlyFirstElement);
 
@@ -514,7 +515,10 @@ namespace osm_planner {
 
         std::vector<OSM_NODE> new_nodes;
         OSM_NODE new_node;
+
         double dist = Haversine::getDistance(node1, node2);
+      //  ROS_ERROR("dist %f", dist);
+
         int count_new_nodes = dist / interpolation_max_distance;    //calculate number of new interpolated nodes
 
         for (int i = 0; i < count_new_nodes; i++) {

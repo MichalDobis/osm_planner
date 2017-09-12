@@ -26,6 +26,7 @@ namespace osm_planner {
         typedef struct osm_node {
             double latitude;
             double longitude;
+            double altitude;
             double angle;
         } OSM_NODE;
 
@@ -81,6 +82,8 @@ namespace osm_planner {
 
         void setInterpolationMaxDistance(double param);
 
+
+//#define WGS_84_FORMAT
         //Embedded class for calculating distance and bearing
         //Functions was inspired by: http://www.movable-type.co.uk/scripts/latlong.html
         class Haversine {
@@ -96,9 +99,32 @@ namespace osm_planner {
 
                 originPoint.latitude = latitude;
                 originPoint.longitude = longitude;
+#ifdef WGS_84_FORMAT
+                setOrigin(originPoint);
+#endif
+            }
+            OSM_NODE getOrigin() {return originPoint;}
+
+#ifdef WGS_84_FORMAT
+            void setOrigin(OSM_NODE origin){
+
+                this->origin = getPointWGS(origin);
             }
 
-            OSM_NODE getOrigin() {return originPoint;}
+            template<class N1>
+            static geometry_msgs::Point getPointWGS(N1 node){
+
+                geometry_msgs::Point p;
+                double N = a/(sqrt(1 - pow(e, 2.0)*pow(sin(node.latitude), 2.0)));
+
+                p.x = (N + 0) * cos(node.latitude) * cos(node.longitude);
+                p.y = (N + 0) * cos(node.latitude) * sin(node.longitude);
+                p.z = (N * (1 - pow(e, 2.0) ) + 0) * sin(node.latitude);
+
+                return p;
+            }
+
+#endif
 
             template<class N1, class N2>static double getDistance(N1 node1, N2 node2){
 
@@ -111,6 +137,8 @@ namespace osm_planner {
                 *  λ - longitude;
                 */
 
+#ifndef WGS_84_FORMAT
+                //Haversine old method
                 double dLat = node2.latitude * DEG2RAD - node1.latitude * DEG2RAD;
                 double dLon = node2.longitude * DEG2RAD - node1.longitude * DEG2RAD;
                 double a = sin(dLat / 2) * sin(dLat / 2) +
@@ -118,6 +146,14 @@ namespace osm_planner {
                            sin(dLon / 2) * sin(dLon / 2);
                 double c = 2 * atan2(sqrt(a), sqrt(1 - a));
                 return R * c;
+#else
+                //new method
+                geometry_msgs::Point p1 = getPointWGS(node1);
+                geometry_msgs::Point p2 = getPointWGS(node2);
+
+                return sqrt(pow(p1.x - p2.x, 2.0) + pow(p1.y - p2.y, 2.0));
+#endif
+
             };
 
             template<class N1, class N2> static double getBearing(N1 node1, N2 node2){
@@ -131,12 +167,22 @@ namespace osm_planner {
                 *  λ - longitude;
                 */
 
+#ifndef WGS_84_FORMAT
+                //Haversine old method
                 double dLon = node2.longitude * DEG2RAD - node1.longitude * DEG2RAD;
 
                 double y = sin(dLon) * cos(node2.latitude * DEG2RAD);
                 double x = cos(node1.latitude * DEG2RAD) * sin(node2.latitude * DEG2RAD) -
                            sin(node1.latitude * DEG2RAD) * cos(node2.latitude * DEG2RAD) * cos(dLon);
                 return atan2(y, x);
+
+#else
+                //new method
+                geometry_msgs::Point p1 = getPointWGS(node1);
+                geometry_msgs::Point p2 = getPointWGS(node2);
+
+                return atan2( p1.y - p2.y, p1.x - p2.x);
+#endif
             };
 
             template<class N> double getBearing(N node){
@@ -150,12 +196,21 @@ namespace osm_planner {
                 *  λ - longitude;
                 */
 
-                double dLon = node.longitude * DEG2RAD - originPoint.longitude * DEG2RAD;
+#ifndef WGS_84_FORMAT
+
+                //Haversine old method
+               double dLon = node.longitude * DEG2RAD - originPoint.longitude * DEG2RAD;
 
                 double y = sin(dLon) * cos(node.latitude * DEG2RAD);
                 double x = cos(originPoint.latitude * DEG2RAD) * sin(node.latitude * DEG2RAD) -
                            sin(originPoint.latitude * DEG2RAD) * cos(node.latitude * DEG2RAD) * cos(dLon);
-                return atan2(y, x)  + offset;;
+                return atan2(y, x)  + offset;
+#else
+
+                geometry_msgs::Point p = getPointWGS(node);
+
+                return atan2( origin.y - p.y, origin.x - p.x);
+#endif
             };
 
 
@@ -169,10 +224,13 @@ namespace osm_planner {
 
                 return node1.longitude < node2.longitude ? dist : -dist;*/
 
+
+                //Haversine old method
                double dist = getDistance(originPoint, node);
                double bearing  = getBearing(originPoint, node);
                return sin(bearing + offset)*dist;
              //   return cos(bearing + offset)*dist;
+
             };
 
             template<class N1, class N2>  static double getCoordinateX(N1 node1, N2 node2){
@@ -187,8 +245,7 @@ namespace osm_planner {
 
                 double dist = getDistance(node1, node2);
                 double bearing  = getBearing(node1, node2);
-                return sin(bearing)*dist;
-                //   return cos(bearing + offset)*dist;
+                return sin(bearing + OFFSET)*dist;
             };
 
             template<class N> double getCoordinateY(N node){
@@ -200,10 +257,12 @@ namespace osm_planner {
 
                 return node1.latitude < node2.latitude ? dist : -dist;*/
 
+                //Haversine old method
                 double dist = getDistance(originPoint, node);
                 double bearing  = getBearing(originPoint, node);
                 return cos(bearing + offset)*dist;
                // return sin(bearing + offset)*dist;
+
             };
 
             template<class N1, class N2> static double getCoordinateY(N1 node1, N2 node2){
@@ -215,18 +274,29 @@ namespace osm_planner {
 
                 return node1.latitude < node2.latitude ? dist : -dist;*/
 
+                //Haversine old method
                 double dist = getDistance(node1, node2);
                 double bearing  = getBearing(node1, node2);
-                return cos(bearing)*dist;
+                return cos(bearing + OFFSET)*dist;
                 // return sin(bearing + offset)*dist;
+
             };
 
         private:
             double offset;
             OSM_NODE originPoint;
+            geometry_msgs::Point origin;
             constexpr static double R = 6371e3;
             constexpr static double DEG2RAD = M_PI / 180;
             constexpr static double RAD2DEG = 180 / M_PI;
+            constexpr static double OFFSET = M_PI/2;
+
+#ifdef WGS_84_FORMAT
+            constexpr static double a = 6375137; //m - dlzka hlavnej polosi, polomer rovnika
+            constexpr static double b = 6356753; //m - dlzka vedlajsej polosi, polomer poludnika
+            constexpr static double f = (a - b)/a; //spolostenie elipsoidu Zeme
+            constexpr static double e = 2*f - f*f; //prva excentricita
+#endif
         };
 
 

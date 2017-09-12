@@ -2,14 +2,14 @@
 <launch>
   <master auto="start"/>
 
-    <arg name="filepath" default="$(find osm_planner)/osm_example/fei.osm"/>
+    <arg name="osm_map_path" default="$(find osm_planner)/osm_example/fei.osm"/>
 
     <!-- pkg="osm_planner" type="osm_helper" name="osm_helper" output="screen"/-->
 
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen" required="true">
      <param name="base_global_planner" value="osm_planner/Planner"/>
      <param name="controller_frequency" value="10"/>
-     <param name="global_costmap/filepath" value="$(arg filepath)"/>
+     <param name="Planner/osm_map_path" value="$(arg osm_map_path)"/>
      <rosparam file="$(find osm_planner)/config/ros_param.yaml" command="load" />
   </node>
 

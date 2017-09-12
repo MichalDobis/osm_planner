@@ -44,7 +44,6 @@ namespace osm_planner {
 
             //Set the density of points
             n.param<double>("interpolation_max_distance", interpolation_max_distance, 1000);
-            ROS_ERROR("paremeter max distance %f",interpolation_max_distance);
             map->setInterpolationMaxDistance(interpolation_max_distance);
 
             std::string topic_name;
@@ -117,6 +116,7 @@ namespace osm_planner {
             return;
 
         map->parse();
+
         map->getCalculator()->setOrigin(lat, lon);
 
         //Save the position for path planning
