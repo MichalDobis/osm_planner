@@ -74,7 +74,11 @@ namespace osm_planner {
 
             //Debug param
             int set_origin_pose;
-            n.param<int>("set_origin_pose", set_origin_pose, false);
+            double origin_lat, origin_lon;
+            n.param<int>("set_origin_pose", set_origin_pose, 0);
+            n.param<double>("origin_latitude", origin_lat, 0);
+            n.param<double>("origin_longitude",origin_lon, 0);
+
             Parser::OSM_NODE origin;
             switch (set_origin_pose) {
                 case FROM_SERVICE:
@@ -85,6 +89,9 @@ namespace osm_planner {
                     break;
                 case RANDOM_POINT:
                     localization.initializePos(true);
+                    break;
+                case FROM_PARAM:
+                    localization.initializePos(origin_lat, origin_lon);
                     break;
             }
         }

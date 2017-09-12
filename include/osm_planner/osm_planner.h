@@ -23,6 +23,7 @@ namespace osm_planner {
     const static int FROM_SERVICE = 0;
     const static int FIRST_POINT = 1;
     const static int RANDOM_POINT = 2;
+    const static int FROM_PARAM = 3;
 
     class Planner: public nav_core::BaseGlobalPlanner{
     public:
