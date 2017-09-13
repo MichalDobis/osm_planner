@@ -471,9 +471,9 @@ namespace osm_planner {
         diff_x += gps_x - tf_x;
         diff_y += gps_y - tf_y;
 
-        ROS_INFO("TF pose : x %f y %f", tf_x, tf_y);
-        ROS_INFO("GPS pose: x %f y %f", gps_x, gps_y);
-        ROS_INFO("improve tf pose from gps x:%f y:%f", diff_x, diff_y);
+    //    ROS_INFO("TF pose : x %f y %f", tf_x, tf_y);
+     //   ROS_INFO("GPS pose: x %f y %f", gps_x, gps_y);
+      //  ROS_INFO("improve tf pose from gps x:%f y:%f", diff_x, diff_y);
 
         broadcaster_mutex.lock();
         transform.setOrigin(tf::Vector3(diff_x, diff_y, 0));
@@ -494,7 +494,7 @@ namespace osm_planner {
     void TfHandler::improveTfRotation(double angleDiff) {
 
         yaw += angleDiff;
-        ROS_ERROR("yaw %f", yaw);
+     //   ROS_ERROR("yaw %f", yaw);
         tf::Quaternion q;
         q.setRPY(0, 0,  yaw);
         broadcaster_mutex.lock();
@@ -608,18 +608,14 @@ namespace osm_planner {
         geometry_msgs::Point currentTfPosition = tf->getPoseFromTF(tf->getMapFrame());
 
         double tfDist = sqrt(pow(currentTfPosition.x - firstTfPosition.x, 2.0) + pow(currentTfPosition.y - firstTfPosition.y, 2.0));
-     //   double tfAngle = atan2(currentTfPosition.x - firstTfPosition.x, currentTfPosition.y - firstTfPosition.y);
-      //  double tfAngle = atan2( firstTfPosition.x - currentTfPosition.x,  firstTfPosition.y - currentTfPosition.y);
-       // double tfAngle = atan2(firstTfPosition.y - currentTfPosition.y,  firstTfPosition.x - currentTfPosition.x);
-        double tfAngle = atan2( currentTfPosition.y - firstTfPosition.y, currentTfPosition.x - firstTfPosition.x);
+       double tfAngle = atan2( currentTfPosition.y - firstTfPosition.y, currentTfPosition.x - firstTfPosition.x);
 
-       // map->publishPoint(currentTfPosition, Parser::TARGET_POSITION_MARKER, 1);
         setAngleRange(&bearing);
         setAngleRange(&tfAngle);
         angleDiff = bearing - tfAngle;
 
-        ROS_WARN("calculating: Odom dist %f, angle %f. Path dist %f, angle %f", tfDist, tfAngle * 180 / M_PI, pathDist, bearing  * 180 / M_PI);
-        ROS_INFO("x %f y %f", currentTfPosition.x, currentTfPosition.y);
+     //   ROS_WARN("calculating: Odom dist %f, angle %f. Path dist %f, angle %f", tfDist, tfAngle * 180 / M_PI, pathDist, bearing  * 180 / M_PI);
+      //  ROS_INFO("x %f y %f", currentTfPosition.x, currentTfPosition.y);
       return;
 
     }
@@ -640,7 +636,7 @@ namespace osm_planner {
       //  double pathDist = map->getCalculator()->getDistance(map->getNodeByID(firstNodeID), map->getNodeByID(currentNodeID));
         double dist = map->getCalculator()->getDistance(startPoint.node, currentPosition.node);
         if (dist > maxDistance) {
-            ROS_ERROR("update correction %f", angleDiff*180 / M_PI);
+        //    ROS_ERROR("update correction %f", angleDiff*180 / M_PI);
             tf->improveTfRotation(angleDiff);
 
             //tf->setTfRotation(bearing);
