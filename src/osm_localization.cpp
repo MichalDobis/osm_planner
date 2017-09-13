@@ -157,7 +157,17 @@ namespace osm_planner {
 
         } else{
             Parser::OSM_NODE origin = map->getNodeByID(0);
-            map->getCalculator()->setOrigin(origin.latitude, origin.longitude);
+            /*map->getCalculator()->setOrigin(origin.latitude, origin.longitude);
+            ROS_ERROR("OSM lat %f, lon %f", origin.latitude,origin.longitude);
+
+            Parser::OSM_NODE test;
+            test.latitude =  48.1532431;
+            test.longitude = 17.0743601;
+            double x = map->getCalculator()->getCoordinateX(test);
+            double y = map->getCalculator()->getCoordinateY(test);
+
+            ROS_ERROR("OSM x: %f y: %f",x,y);*/
+
             source.geoPoint = origin;
         }
 
