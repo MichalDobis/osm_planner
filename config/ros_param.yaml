@@ -9,7 +9,7 @@ Planner:
 
   # Parser's params
   interpolation_max_distance: 2.0 # Max distance between two nodes of orientated graph
-  filter_of_ways: ["all"]         # Filter for parser. Parse only routes, which have value on the list
+  filter_of_ways: ["footway"]         # Filter for parser. Parse only routes, which have value on the list
                                 # If value is all, then parse all routes
 
   set_origin_pose: 3          # Set the origin pose on the map for cartesian calculator
@@ -18,13 +18,13 @@ Planner:
                               # 2 - random origin pose
                               # 3 - origin pose from param
 
-  origin_latitude: 48.1532431
-  origin_longitude: 17.0743601
+  origin_latitude: 49.2112037
+  origin_longitude: 18.7448376
 
   footway_width: 2
 
 
-  use_localization: false
+  use_localization: true
   use_tf_broadcaster: false
  # This params has usage, when param use_tf_broadcaster is true
   local_map_frame: map    #TF frame for correction
