@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include <osm_planner/dijkstra.h>
+#include <osm_planner/path_finder_algorithm/dijkstra.h>
 #include <osm_planner/osm_parser.h>
 #include <osm_planner/osm_localization.h>
 #include <osm_planner/newTarget.h>
@@ -28,12 +28,6 @@ namespace osm_planner {
     class Planner: public nav_core::BaseGlobalPlanner{
     public:
 
-        typedef struct point{
-            int id;
-            Parser::OSM_NODE geoPoint;
-            geometry_msgs::PoseStamped cartesianPoint;
-        }POINT;
-
         Planner();
         void initialize();
 
@@ -42,13 +36,13 @@ namespace osm_planner {
         void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
         bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
         int makePlan(double target_latitude, double target_longitude);
-        ros::NodeHandle n;
 
     protected:
 
         //Class for localization on the map
           std::shared_ptr<Localization> localization_source_;
         std::shared_ptr<Localization> localization_target_;
+        ros::NodeHandle n;
 
         //make plan from source to target
         int planning(int sourceID, int targetID);
@@ -59,8 +53,13 @@ namespace osm_planner {
 
     private:
 
+        struct OsmPath{
+            nav_msgs::Path nav_path;
+            std::vector<int> node_path;
+        };
+
         std::shared_ptr<Parser> map;
-        Dijkstra dijkstra;
+        std::shared_ptr<path_finder_algorithm::PathFinderBase> path_finder_;
 
         bool initialized_ros;
 
@@ -68,7 +67,7 @@ namespace osm_planner {
         ros::Publisher shortest_path_pub;
 
         //msgs for shortest path
-        nav_msgs::Path path;
+        OsmPath shortest_path_;
 
         /* Services */
         ros::ServiceServer cancel_point_service;

@@ -197,12 +197,13 @@ namespace osm_planner {
     /* GETTERS */
 
 //getter for dijkstra algorithm - getting only pointer for spare memory
-    std::vector<std::vector<float> > *Parser::getGraphOfVertex() {
+    std::shared_ptr<std::vector<std::vector<float>>> Parser::getGraphOfVertex() {
 
-        return &networkArray;
+        return std::make_shared<std::vector<std::vector<float>>>(networkArray);
     }
 
     //getting defined path
+    //TODO std::shared_ptr
     nav_msgs::Path Parser::getPath(std::vector<int> nodesInPath) {
 
         //msgs for shortest path

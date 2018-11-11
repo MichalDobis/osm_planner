@@ -136,8 +136,8 @@ add_dependencies(osm_parser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTE
 add_library(osm_planner
         src/osm_planner.cpp
         src/osm_parser.cpp
-        src/dijkstra.cpp
         src/osm_localization.cpp
+        src/path_finder_algorithm/dijkstra.cpp
       #  src/auto_initalization.cpp
         )
 target_link_libraries(osm_planner

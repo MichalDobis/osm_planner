@@ -18,9 +18,9 @@ namespace osm_planner {
 
 
     Planner::Planner() :
-            dijkstra(),
             n("~/Planner") {
 
+        path_finder_ = std::make_shared<osm_planner::path_finder_algorithm::Dijkstra>();
         map = std::make_shared<osm_planner::Parser>();
         localization_source_ = std::make_shared<osm_planner::Localization>(map, "source");
         localization_target_ = std::make_shared<osm_planner::Localization>(map, "target");
@@ -30,9 +30,9 @@ namespace osm_planner {
     }
 
     Planner::Planner(std::string name, costmap_2d::Costmap2DROS* costmap_ros) :
-            dijkstra(),
             n("~"+name) {
 
+        path_finder_ = std::make_shared<osm_planner::path_finder_algorithm::Dijkstra>();
         map = std::make_shared<osm_planner::Parser>();
         localization_source_ = std::make_shared<osm_planner::Localization>(map, "source");
         localization_target_ = std::make_shared<osm_planner::Localization>(map, "target");
@@ -149,10 +149,10 @@ namespace osm_planner {
         //If distance between start and goal pose is lower as footway width then skip the planning on the osm map
         if (startGoalDist <  localization_source_->getFootwayWidth() + localization_source_->getDistanceFromWay()){
             plan.push_back(goal);
-            path.poses.clear();
-            path.poses.push_back(start);
-            path.poses.push_back(goal);
-            shortest_path_pub.publish(path);
+            shortest_path_.nav_path.poses.clear();
+            shortest_path_.nav_path.poses.push_back(start);
+            shortest_path_.nav_path.poses.push_back(goal);
+            shortest_path_pub.publish(shortest_path_.nav_path);
             map->publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER, 1.0, goal.pose.orientation);
             return true;
         }
@@ -171,20 +171,19 @@ namespace osm_planner {
           if (result == osm_planner::newTarget::Response::NOT_INIT || result == osm_planner::newTarget::Response::PLAN_FAILED)
             return false;
 
-        for (int i=1; i< path.poses.size(); i++){
+          // Convert to geometry_msgs::PoseStamped
+        for (int i=1; i< shortest_path_.nav_path.poses.size(); i++){
 
             geometry_msgs::PoseStamped new_goal = goal;
-
-            new_goal.pose.position.x = path.poses[i].pose.position.x;
-            new_goal.pose.position.y = path.poses[i].pose.position.y;
-            new_goal.pose.orientation = path.poses[i].pose.orientation;
-
+            new_goal.pose.position.x = shortest_path_.nav_path.poses[i].pose.position.x;
+            new_goal.pose.position.y = shortest_path_.nav_path.poses[i].pose.position.y;
+            new_goal.pose.orientation = shortest_path_.nav_path.poses[i].pose.orientation;
             plan.push_back(new_goal);
         }
 
         //add end (target) point
-        path.poses.push_back(goal);
-        shortest_path_pub.publish(path);
+        shortest_path_.nav_path.poses.push_back(goal);
+        shortest_path_pub.publish(shortest_path_.nav_path);
         plan.push_back(goal);
 
         return true;
@@ -218,8 +217,8 @@ namespace osm_planner {
         end.pose = localization_target_->getPose();
         end.header.frame_id = map->getMapFrameName();
         end.header.stamp = ros::Time::now();
-        path.poses.push_back(end);
-        shortest_path_pub.publish(path);
+        shortest_path_.nav_path.poses.push_back(end);
+        shortest_path_pub.publish(shortest_path_.nav_path);
         return result;
         }
 
@@ -241,12 +240,13 @@ namespace osm_planner {
         ros::Time start_time = ros::Time::now();
 
         try {
-            path = map->getPath(dijkstra.findShortestPath(map->getGraphOfVertex(), sourceID, targetID));
+            shortest_path_.node_path = path_finder_->findShortestPath(map->getGraphOfVertex(), sourceID, targetID);
+            shortest_path_.nav_path = map->getPath(shortest_path_.node_path);
 
             ROS_INFO("OSM planner: Time of planning: %f ", (ros::Time::now() - start_time).toSec());
 
-        } catch (dijkstra_exception &e) {
-            if (e.get_err_id() == dijkstra_exception::NO_PATH_FOUND) {
+        } catch (path_finder_algorithm::PathFinderException &e) {
+            if (e.getErrId() == path_finder_algorithm::PathFinderException::NO_PATH_FOUND) {
                 ROS_ERROR("OSM planner: Make plan failed...");
             } else
                 ROS_ERROR("OSM planner: Undefined error");
@@ -267,34 +267,33 @@ namespace osm_planner {
         }
 
         //get current shortest path - vector of osm nodes IDs
-        std::vector<int> path = dijkstra.getSolution();
 
         //if index is greater than array size
-        if (pointID >= path.size()) {
+        if (pointID >= shortest_path_.node_path.size()) {
             return osm_planner::cancelledPoint::Response::BAD_INDEX;
         }
 
         //for drawing deleted path
         std::vector<int> refused_path(2);
-        refused_path[0] = path[pointID];
-        refused_path[1] = path[pointID + 1];
+        refused_path[0] = shortest_path_.node_path[pointID];
+        refused_path[1] = shortest_path_.node_path[pointID + 1];
         map->publishRefusedPath(refused_path);
 
         //delete edge between two osm nodes
-        map->deleteEdgeOnGraph(path[pointID], path[pointID + 1]);
+        map->deleteEdgeOnGraph(shortest_path_.node_path[pointID], shortest_path_.node_path[pointID + 1]);
 
         try {
-
-            this->path = map->getPath(dijkstra.findShortestPath(map->getGraphOfVertex(), path[pointID], localization_target_->getPositionNodeID()));
+            shortest_path_.node_path = path_finder_->findShortestPath(map->getGraphOfVertex(), shortest_path_.node_path[pointID], localization_target_->getPositionNodeID());
+            this->shortest_path_.nav_path = map->getPath(shortest_path_.node_path);
             geometry_msgs::PoseStamped goal;
             goal.pose = localization_target_->getPose();
             goal.header.frame_id = map->getMapFrameName();
             goal.header.stamp = ros::Time::now();
-            this->path.poses.push_back(goal);
-            shortest_path_pub.publish(this->path);
+            this->shortest_path_.nav_path.poses.push_back(goal);
+            shortest_path_pub.publish(this->shortest_path_.nav_path);
 
-        } catch (dijkstra_exception &e) {
-            if (e.get_err_id() == dijkstra_exception::NO_PATH_FOUND) {
+        } catch (osm_planner::path_finder_algorithm::PathFinderException &e) {
+            if (e.getErrId() == path_finder_algorithm::PathFinderException::NO_PATH_FOUND) {
                 ROS_ERROR("OSM planner: Make plan failed");
             } else
                 ROS_ERROR("OSM planner: Undefined error");
@@ -319,7 +318,7 @@ namespace osm_planner {
     bool Planner::drawingRouteCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
 
         map->publishRouteNetwork();
-        shortest_path_pub.publish(path);
+        shortest_path_pub.publish(shortest_path_.nav_path);
         return true;
     }
 

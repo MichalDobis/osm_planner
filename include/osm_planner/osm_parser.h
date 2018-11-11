@@ -23,6 +23,11 @@ namespace osm_planner {
     class Parser {
     public:
 
+        //TODO zmazat
+        void printNodeSize(){
+            ROS_INFO("node size %d", nodes.size());
+        }
+
         typedef struct osm_node {
             double latitude;
             double longitude;
@@ -69,7 +74,7 @@ namespace osm_planner {
         void deleteEdgeOnGraph(int nodeID_1, int nodeID_2);
 
         //GETTERS
-        std::vector<std::vector<float> > *getGraphOfVertex(); //for dijkstra algorithm
+        std::shared_ptr<std::vector<std::vector<float>>> getGraphOfVertex(); //for dijkstra algorithm
         int getNearestPoint(double lat, double lon); //return OSM node ID
         int getNearestPointXY(double point_x, double point_y); //return OSM node ID
         OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
