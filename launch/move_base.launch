@@ -2,7 +2,7 @@
 <launch>
   <master auto="start"/>
 
-    <arg name="osm_map_path" default="$(find osm_planner)/osm_example/park_ludovita_stura_2.osm"/>
+    <arg name="osm_map_path" default="$(find osm_planner)/osm_example/fei.osm"/>
 
     <!-- pkg="osm_planner" type="osm_helper" name="osm_helper" output="screen"/-->
 

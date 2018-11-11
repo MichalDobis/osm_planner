@@ -40,19 +40,15 @@ namespace osm_planner {
         /** overriden classes from interface nav_core::BaseGlobalPlanner **/
         Planner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
         void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
-        bool makePlan(const geometry_msgs::PoseStamped& start,
-                      const geometry_msgs::PoseStamped& goal,
-                      std::vector<geometry_msgs::PoseStamped>& plan
-        );
-
+        bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
         int makePlan(double target_latitude, double target_longitude);
         ros::NodeHandle n;
 
     protected:
 
         //Class for localization on the map
-        Localization localization;
-
+          std::shared_ptr<Localization> localization_source_;
+        std::shared_ptr<Localization> localization_target_;
 
         //make plan from source to target
         int planning(int sourceID, int targetID);
@@ -63,17 +59,13 @@ namespace osm_planner {
 
     private:
 
-        Parser osm;
+        std::shared_ptr<Parser> map;
         Dijkstra dijkstra;
 
         bool initialized_ros;
 
-        POINT target;
-
-      //  bool use_map_rotation;
         /*Publisher*/
         ros::Publisher shortest_path_pub;
-     //   ros::Publisher utm_init_pub;
 
         //msgs for shortest path
         nav_msgs::Path path;

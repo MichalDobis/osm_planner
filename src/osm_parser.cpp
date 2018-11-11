@@ -74,6 +74,7 @@ namespace osm_planner {
         createNetwork();
     }
 
+    // TODO spravit const ref
     void Parser::publishPoint(geometry_msgs::Point point, int marker_type, double radius, geometry_msgs::Quaternion orientation) {
 
         point.z = 0;
@@ -122,14 +123,17 @@ namespace osm_planner {
     void Parser::publishPoint(int pointID, int marker_type, double radius,geometry_msgs::Quaternion orientation) {
 
         geometry_msgs::Point point;
-        point.x = 0;
-        point.y = 0;
-
         point.x = haversine.getCoordinateX(nodes[pointID]);
         point.y = haversine.getCoordinateY(nodes[pointID]);
-
         publishPoint(point, marker_type, radius, orientation);
+    }
 
+    void Parser::publishPoint(const OSM_NODE &node, int marker_type, double radius,geometry_msgs::Quaternion orientation) {
+
+        geometry_msgs::Point point;
+        point.x = haversine.getCoordinateX(node);
+        point.y = haversine.getCoordinateY(node);
+        publishPoint(point, marker_type, radius, orientation);
     }
 
 //publishing all paths
@@ -230,6 +234,14 @@ namespace osm_planner {
         return sh_path;
     }
 
+    std::string Parser::getMapFrameName() {
+        return map_frame;
+    }
+
+    double Parser::getInterpolationMaxDistance() {
+        return interpolation_max_distance;
+    }
+
 
     int Parser::getNearestPoint(double lat, double lon) {
 
@@ -258,10 +270,14 @@ namespace osm_planner {
 
         int id = 0;
 
+        ROS_ERROR("test");
+        ROS_ERROR("node size %d", nodes.size());
+
         double x = haversine.getCoordinateX(nodes[0]);
         double y = haversine.getCoordinateY(nodes[0]);
         double minDistance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
 
+        ROS_ERROR("min distance calcaulted");
         for (int i = 0; i < nodes.size(); i++) {
             x = haversine.getCoordinateX(nodes[i]);
             y = haversine.getCoordinateY(nodes[i]);
@@ -297,8 +313,24 @@ namespace osm_planner {
         haversine.setOffset(bearing);
    }
 
+    void Parser::setStartPoint(double latitude, double longitude) {
+
+        haversine.setOrigin(latitude, longitude);
+    }
+
+    void Parser::setStartPoint(OSM_NODE node) {
+
+        haversine.setOrigin(node.latitude, node.longitude);
+    }
+
+    void Parser::setStartPoint(int id) {
+
+        OSM_NODE node = this->getNodeByID(id);
+        haversine.setOrigin(node.latitude, node.longitude);
+    }
+
     //set random start pose
-   void Parser::setStartPoint(){
+   void Parser::setRandomStartPoint(){
 
        int id =  (int) (((double)rand() / RAND_MAX) * size_of_nodes);
        haversine.setOrigin(nodes[id].latitude, nodes[id].longitude);

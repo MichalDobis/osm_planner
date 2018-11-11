@@ -18,22 +18,8 @@ Planner:
                               # 2 - random origin pose
                               # 3 - origin pose from param
 
-  origin_latitude: 49.2112037
-  origin_longitude: 18.7448376
+  origin_latitude: 48.1531010533
+  origin_longitude: 17.0743728117
 
   footway_width: 2
 
-
-  use_localization: true
-  use_tf_broadcaster: false
- # This params has usage, when param use_tf_broadcaster is true
-  local_map_frame: map    #TF frame for correction
-  update_tf_pose_from_gps: 0       # 0 - no tf correction from gps
-                                   # 1 - Do correction only when gps accuracy is better
-                                   # 2 - Do correction always when is received correct gps message
-
-  matching_tf_with_map: 1         # Compute correction angle between TF pose and path
-                                  # 0 - no correction
-                                  # 1 - only one correction
-                                  # correction allways
-  distance_for_update_rotation: 3.0 # Minimal distance needed for update rotation. Param has usage, when matching_tf_with_map isn`t 0

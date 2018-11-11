@@ -16,14 +16,16 @@ public:
         //init ros topics and services
         ros::NodeHandle n;
 
-        odom_sub = n.subscribe("odom", 1, &OsmPlannerNode::odometryCallback, this);
+        odom_topic_ = "odom";
+        odom_sub = n.subscribe(odom_topic_, 1, &OsmPlannerNode::odometryCallback, this);
 
         //services
+        //TODO mozno pridat namespace
         plan_service = n.advertiseService("make_plan", &OsmPlannerNode::makePlanCallback, this);
     }
 
     void update(){
-        localization.updatePoseFromTF();
+      //  localization.updatePoseFromTF();
     }
 
 private:
@@ -34,17 +36,19 @@ private:
 
     /* Services */
     ros::ServiceServer plan_service;
+    std::string odom_topic_;
 
 
     bool makePlanCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res) {
 
+        boost::shared_ptr<const nav_msgs::Odometry> odom = ros::topic::waitForMessage<nav_msgs::Odometry>(odom_topic_, ros::Duration(3));
         res.result = makePlan(req.latitude, req.longitude);
         return true;
     }
 
     void odometryCallback(const nav_msgs::Odometry::ConstPtr& msg) {
 
-        localization.setPositionFromOdom(msg->pose.pose.position);
+        localization_source_->setPositionFromPose(msg->pose.pose);
     }
 
 };
@@ -61,6 +65,7 @@ int main(int argc, char **argv) {
 
         osm_planner.update();
         ros::spinOnce();
+        rate.sleep();
     }
 
 return 0;

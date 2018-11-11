@@ -18,14 +18,24 @@ namespace osm_planner {
 
 
     Planner::Planner() :
-            osm(), dijkstra(), localization(&osm), n("~/Planner") {
+            dijkstra(),
+            n("~/Planner") {
+
+        map = std::make_shared<osm_planner::Parser>();
+        localization_source_ = std::make_shared<osm_planner::Localization>(map, "source");
+        localization_target_ = std::make_shared<osm_planner::Localization>(map, "target");
 
         initialized_ros = false;
         initialize();
     }
 
     Planner::Planner(std::string name, costmap_2d::Costmap2DROS* costmap_ros) :
-            osm(), dijkstra(), localization(&osm), n("~"+name) {
+            dijkstra(),
+            n("~"+name) {
+
+        map = std::make_shared<osm_planner::Parser>();
+        localization_source_ = std::make_shared<osm_planner::Localization>(map, "source");
+        localization_target_ = std::make_shared<osm_planner::Localization>(map, "target");
 
         initialized_ros = false;
         initialize(name, costmap_ros);
@@ -47,30 +57,17 @@ namespace osm_planner {
 
         if (!initialized_ros) {
 
-            //source of map
-            std::string file = "skuska.osm";
-            n.getParam("osm_map_path", file);
-            osm.setNewMap(file);
-
-            std::vector<std::string> types_of_ways;
-            n.getParam("filter_of_ways",types_of_ways);
-            osm.setTypeOfWays(types_of_ways);
-
             std::string topic_name;
             n.param<std::string>("topic_shortest_path", topic_name, "/shortest_path");
 
             //publishers
             shortest_path_pub = n.advertise<nav_msgs::Path>(topic_name, 10);
 
-          //  utm_init_pub = n.advertise<sensor_msgs::NavSatFix>("/utm/init", 10);
-
             //services
              cancel_point_service = n.advertiseService("cancel_point", &Planner::cancelPointCallback, this);
             drawing_route_service = n.advertiseService("draw_route", &Planner::drawingRouteCallback, this);
 
             initialized_ros = true;
-
-            localization.initialize();
 
             //Debug param
             int set_origin_pose;
@@ -79,21 +76,49 @@ namespace osm_planner {
             n.param<double>("origin_latitude", origin_lat, 0);
             n.param<double>("origin_longitude",origin_lon, 0);
 
+            // Get params for map and parse
+            //source of map
+            std::string file = "skuska.osm";
+            n.getParam("osm_map_path", file);
+            map->setNewMap(file);
+
+            std::vector<std::string> types_of_ways;
+            n.getParam("filter_of_ways",types_of_ways);
+            map->setTypeOfWays(types_of_ways);
+
+            //Set the density of points
+            double interpolation_max_distance;
+            n.param<double>("interpolation_max_distance", interpolation_max_distance, 1000);
+            map->setInterpolationMaxDistance(interpolation_max_distance);
+
+            double footway_width;
+            n.param<double>("footway_width", footway_width, 0);
+            localization_source_->setFootwayWidth(footway_width);
+            localization_target_->setFootwayWidth(footway_width);
+
+            map->parse();
+
+            // Find origin and set them
             Parser::OSM_NODE origin;
+            // TODO param FROM_SERVICE uz nie je supportovany
             switch (set_origin_pose) {
-                case FROM_SERVICE:
-                    ROS_WARN("OSM planner: Waiting for init position, please call init service...");
-                    break;
                 case FIRST_POINT:
-                    localization.initializePos(false);
+                    map->setStartPoint(0);
                     break;
                 case RANDOM_POINT:
-                    localization.initializePos(true);
+                    map->setRandomStartPoint();
                     break;
                 case FROM_PARAM:
-                    localization.initializePos(origin_lat, origin_lon);
+                    // Parse map and set origin
+                    map->getCalculator()->setOrigin(origin_lat, origin_lon);
                     break;
+                default:
+                    ROS_ERROR("Bad value of param set_origin_pose");
+                  //  throw std::exception("Bad value of param set_origin_pose");
             }
+
+            map->publishRouteNetwork();
+            ROS_INFO("OSM planner: Initialized. Waiting for request of plan...");
         }
     }
 
@@ -103,7 +128,7 @@ namespace osm_planner {
 
     bool Planner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
 
-        if (!localization.isInitialized()) {
+        if (!initialized_ros) {
             ROS_ERROR("OSM PLANNER: Reference point is not initialize, please call init service");
             return false;
         }
@@ -112,10 +137,9 @@ namespace osm_planner {
         plan.push_back(start);
 
         //localization of nearest point on the footway
-        localization.setPositionFromOdom(start.pose.position);
+        localization_source_->setPositionFromPose(start.pose);
+        map->publishPoint(start.pose.position, Parser::CURRENT_POSITION_MARKER, 1.0, start.pose.orientation);
 
-        //check target distance from footway
-        localization.checkDistance(target.id, target.cartesianPoint.pose);
 
         //compute distance between start and goal
         double dist_x = start.pose.position.x - goal.pose.position.x;
@@ -123,26 +147,25 @@ namespace osm_planner {
         double startGoalDist = sqrt(pow(dist_x, 2.0) + pow(dist_y, 2.0));
 
         //If distance between start and goal pose is lower as footway width then skip the planning on the osm map
-        if (startGoalDist <  localization.getFootwayWidth() + localization.checkDistance(localization.getCurrentPosition()->id, start.pose)){
+        if (startGoalDist <  localization_source_->getFootwayWidth() + localization_source_->getDistanceFromWay()){
             plan.push_back(goal);
             path.poses.clear();
             path.poses.push_back(start);
             path.poses.push_back(goal);
             shortest_path_pub.publish(path);
-            osm.publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER, 1.0, goal.pose.orientation);
+            map->publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER, 1.0, goal.pose.orientation);
             return true;
         }
 
         //set the nearest point as target and save new target point
-        target.id = osm.getNearestPointXY(goal.pose.position.x, goal.pose.position.y);
-        target.cartesianPoint.pose = goal.pose;
+        localization_target_->setPositionFromPose(goal.pose);
 
         //draw target point
-        osm.publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER, 1.0, goal.pose.orientation);
+        map->publishPoint(goal.pose.position, Parser::TARGET_POSITION_MARKER, 1.0, goal.pose.orientation);
 
 
        ///start planning, the Path is obtaining in global variable nav_msgs::Path path
-        int result = planning(localization.getCurrentPosition()->id, target.id);
+        int result = planning(localization_source_->getPositionNodeID(), localization_target_->getPositionNodeID());
 
         //check the result of planning
           if (result == osm_planner::newTarget::Response::NOT_INIT || result == osm_planner::newTarget::Response::PLAN_FAILED)
@@ -174,30 +197,28 @@ namespace osm_planner {
     int Planner::makePlan(double target_latitude, double target_longitude) {
 
         //Reference point is not initialize, please call init service
-        if (!localization.isInitialized()) {
+        if (!initialized_ros) {
             return osm_planner::newTarget::Response::NOT_INIT;
         }
 
-        localization.updatePoseFromTF(); //update source point from TF
+        localization_target_->setPositionFromGPS(target_latitude, target_longitude);
 
-        //save new target point
-        target.geoPoint.latitude = target_latitude;
-        target.geoPoint.longitude = target_longitude;
-        target.id = osm.getNearestPoint(target_latitude, target_longitude);
-        target.cartesianPoint.pose.position.x =  osm.getCalculator()->getCoordinateX(target.geoPoint);
-        target.cartesianPoint.pose.position.y =  osm.getCalculator()->getCoordinateY(target.geoPoint);
-        target.cartesianPoint.pose.orientation = tf::createQuaternionMsgFromYaw( osm.getCalculator()->getBearing(target.geoPoint));
+        //publish start and goal marker
+        if (localization_source_->isPositionFromGps()) {
+            map->publishPoint(localization_source_->getGeoPoint(), Parser::CURRENT_POSITION_MARKER, 1.0);
+        } else{
+            map->publishPoint(localization_source_->getPose().position, Parser::CURRENT_POSITION_MARKER, 1.0);
+        }
+        map->publishPoint(target_latitude, target_longitude, Parser::TARGET_POSITION_MARKER, 1.0);
 
-        //draw target point
-        osm.publishPoint(target_latitude, target_longitude, Parser::TARGET_POSITION_MARKER, 1.0, target.cartesianPoint.pose.orientation);
-
-        //checking distance to the nearest point
-        localization.checkDistance(target.id, target.geoPoint.latitude, target.geoPoint.longitude);
-
-       int result = planning(localization.getCurrentPosition()->id, target.id);
+       int result = planning(localization_source_->getPositionNodeID(), localization_target_->getPositionNodeID());
 
         //add end (target) point
-        path.poses.push_back(target.cartesianPoint);
+        geometry_msgs::PoseStamped end;
+        end.pose = localization_target_->getPose();
+        end.header.frame_id = map->getMapFrameName();
+        end.header.stamp = ros::Time::now();
+        path.poses.push_back(end);
         shortest_path_pub.publish(path);
         return result;
         }
@@ -212,7 +233,7 @@ namespace osm_planner {
     int Planner::planning(int sourceID, int targetID) {
 
         //Reference point is not initialize, please call init service
-        if (!localization.isInitialized()) {
+        if (!initialized_ros) {
             return osm_planner::newTarget::Response::NOT_INIT;
         }
 
@@ -220,7 +241,7 @@ namespace osm_planner {
         ros::Time start_time = ros::Time::now();
 
         try {
-            path = osm.getPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), sourceID, targetID));
+            path = map->getPath(dijkstra.findShortestPath(map->getGraphOfVertex(), sourceID, targetID));
 
             ROS_INFO("OSM planner: Time of planning: %f ", (ros::Time::now() - start_time).toSec());
 
@@ -241,7 +262,7 @@ namespace osm_planner {
     int Planner::cancelPoint(int pointID) {
 
         //Reference point is not initialize, please call init service
-        if (!localization.isInitialized()) {
+        if (!initialized_ros) {
             return osm_planner::cancelledPoint::Response::NOT_INIT;
         }
 
@@ -257,20 +278,19 @@ namespace osm_planner {
         std::vector<int> refused_path(2);
         refused_path[0] = path[pointID];
         refused_path[1] = path[pointID + 1];
-        osm.publishRefusedPath(refused_path);
+        map->publishRefusedPath(refused_path);
 
         //delete edge between two osm nodes
-        osm.deleteEdgeOnGraph(path[pointID], path[pointID + 1]);
-
-        //planning shorest path
-        if (!localization.updatePoseFromTF()) {     //update source position from TF
-            localization.getCurrentPosition()->id = path[pointID];   //if source can not update from TF, return back to last position
-        }
+        map->deleteEdgeOnGraph(path[pointID], path[pointID + 1]);
 
         try {
 
-            this->path = osm.getPath(dijkstra.findShortestPath(osm.getGraphOfVertex(), localization.getCurrentPosition()->id, target.id));
-            this->path.poses.push_back(target.cartesianPoint);
+            this->path = map->getPath(dijkstra.findShortestPath(map->getGraphOfVertex(), path[pointID], localization_target_->getPositionNodeID()));
+            geometry_msgs::PoseStamped goal;
+            goal.pose = localization_target_->getPose();
+            goal.header.frame_id = map->getMapFrameName();
+            goal.header.stamp = ros::Time::now();
+            this->path.poses.push_back(goal);
             shortest_path_pub.publish(this->path);
 
         } catch (dijkstra_exception &e) {
@@ -298,7 +318,7 @@ namespace osm_planner {
 
     bool Planner::drawingRouteCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res){
 
-        osm.publishRouteNetwork();
+        map->publishRouteNetwork();
         shortest_path_pub.publish(path);
         return true;
     }

@@ -1,182 +1,109 @@
 //
 // Created by michal on 31.12.2016.
-/**
- * Inspired by http://www.geeksforgeeks.org/greedy-algorithms-set-6-dijkstras-shortest-path-algorithm/
- *
- * */
+// Modify and refactor by michal on 11.11.2018
 //
 
 #ifndef OSM_LOCALIZATION_H
 #define OSM_LOCALIZATION_H
 
 #include <osm_planner/osm_parser.h>
-#include <tf/tf.h>
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_listener.h>
-
-#include <ros/ros.h>
-#include <boost/thread.hpp>
-
-#include <nav_msgs/Odometry.h>
-#include <sensor_msgs/NavSatFix.h>
-
-#include <osm_planner/newTarget.h>
-#include <osm_planner/computeBearing.h>
-
+#include <geometry_msgs/Pose.h>
 
 namespace osm_planner {
 
-    class TfHandler{
-
-    public:
-        TfHandler(osm_planner::Parser::Haversine *calculator);
-        void initThread();
-        void setTfRotation(double angle);
-        void improveTfPoseFromGPS(const sensor_msgs::NavSatFix::ConstPtr& gps);
-        void improveTfRotation(double angle);
-
-        geometry_msgs::Point getPoseFromTF(std::string map_link); //from tf
-
-        void setFrames(std::string map_frame, std::string local_map_frame, std::string base_link_frame);
-        std::string getMapFrame();
-        std::string getBaseLinkFrame();
-        std::string getLocalMapFrame();
-
-    private:
-
-        osm_planner::Parser::Haversine *calculator;
-
-        std::string map_frame, base_link_frame, local_map_frame;
-
-        /*tf broadcaster*/
-        tf::TransformBroadcaster br;
-        tf::Transform transform;
-
-        double yaw;
-        //tf broadcaster thread
-        //    double initial_angle;
-        boost::shared_ptr<boost::thread> tfThread;
-        void tfBroadcaster();
-
-
-        boost::mutex broadcaster_mutex;
-    };
-
-    class PathFollower{
-
-    public:
-        PathFollower(osm_planner::Parser *map, TfHandler *tf);
-        void addPoint(const sensor_msgs::NavSatFix::ConstPtr& gps);
-        bool doCorrection();
-        void setMaxDistance(double maxDistance);
-        void setAngleRange(double *angle);
-
-    private:
-
-        osm_planner::Parser *map;
-        int firstNodeID;
-        int currentNodeID;
-
-        Parser::OSM_NODE_WITH_ID startPoint;
-        Parser::OSM_NODE_WITH_ID currentPosition;
-
-        geometry_msgs::Point firstTfPosition;
-        //geometry_msgs::Point currentPosition;
-
-        bool firstNodeAdded, secondNodeAdded;
-
-        double angleDiff;
-
-        double bearing;
-        double maxDistance;
-        double currentDistance;
-
-        TfHandler *tf;
-
-        void calculate();
-        void clear();
-    };
-
-
+    //! OSM Localization class
+/*!
+ * The localization on the osm map.
+ * It's create a union of geographic (GPS) pose, cartesian (XY) pose and nearest point on the map
+*/
     class Localization {
     public:
 
+        /**
+         * @brief Set pointer to map class and set default values
+         * @param map - A pointer to map. The map should be constructed and parsed
+         * @param name - Optional param, just for print message
+         */
+        Localization(std::shared_ptr<osm_planner::Parser> map, std::string name = "");
 
-        typedef struct point{
-            int id;
-            Parser::OSM_NODE geoPoint;
-            geometry_msgs::PoseStamped cartesianPoint;
-        }POINT;
+        /**
+         * @brief Setter Footway Width
+         * @param footway_width - It's used in getDistanceFromWayCenter()
+         */
+        void setFootwayWidth(const double footway_width);
 
-        Localization(osm_planner::Parser *map);
+        /**
+         * @brief Set position from GPS data, then calculate nearest map node
+         * and cartesian position from map origin
+         * @param lat - latitude
+         * @param lon - longitude
+         */
+        void setPositionFromGPS(const double lat, const double lon);
 
-        POINT *getCurrentPosition();
-        TfHandler *getTF();
+        /**
+         * @brief Set position from pose, then calculate nearest map node
+         * and set geogpraphic position from map node
+         * @param pose - cartesian position
+         */
+        void setPositionFromPose(const geometry_msgs::Pose &pose);  //from odom
 
+        /**
+         * @brief Getter Footway Width
+         * @return Width of footway
+         */
         double getFootwayWidth();
-        bool isInitialized();
 
+        /**
+         * @brief is position from gps
+         * @return A True if is last position set by setPositionFromGPS()
+         */
+        bool isPositionFromGps();
 
-        void initialize();
-        //todo prerobit lokalizacne veci z osm_planner sem
+        /**
+         * @brief Get ID from nearest node on the map
+         * @return A ID from nearest node on the map
+         */
+        int getPositionNodeID();
 
-        //Before start make plan, this function must be call
-        void initializePos(double lat, double lon, double bearing);
-        void initializePos(double lat, double lon);
-        void initializePos(bool random);
+        /**
+         * @brief Get cartesian pose
+         * @return A cartesian pose
+         */
+        geometry_msgs::Pose getPose();
+        /**
+         * @brief Get geographic position
+         * @return A geographic position
+         */
+        Parser::OSM_NODE getGeoPoint();
 
-        //update pose
-        bool setPositionFromGPS(const sensor_msgs::NavSatFix::ConstPtr& msg);        //from gps
-        void setPositionFromOdom(geometry_msgs::Point point);  //from odom
-        bool updatePoseFromTF();
-
-        double checkDistance(int node_id, double lat, double lon);
-        double checkDistance(int node_id, geometry_msgs::Pose pose);
+        /**
+         * @brief Get distance from way calculated by formula:
+         * Distance between last position (GPS/cartesian) - footway width
+         * @return A distance from way
+         */
+        double getDistanceFromWay();
 
     private:
 
-        TfHandler tfHandler;
-        PathFollower pathFollower;
+        /**
+         * @brief All representations of position
+         * @var id - ID of nearest node
+         * @var geo_point - geographic coordinate
+         * @var cartesian_pose - cartesian coordinate
+         * @var is_set_from_gps - True if is last pose from setPositionFromGPS()
+         */
+        struct positionsData{
+            int id;
+            Parser::OSM_NODE geo_point;
+            geometry_msgs::Pose cartesian_pose;
+            bool is_set_from_gps;
+        };
 
-        osm_planner::Parser *map;
-
-        POINT source;
-
-        bool initialized_ros;
-        bool initialized_position;
-        bool initFromGpsCallback;
-
-
-        //global ros parameters
-        int matching_tf_with_map;
-        int update_tf_pose_from_gps;
-        double interpolation_max_distance;
-        double footway_width;
-
-        static const int DISABLED = 0;
-        static const int ENABLED_ONE = 1;
-        static const int ENABLED_ALLWAYS = 2;
-
-        /* Subscribers */
-        ros::Subscriber gps_sub;
-
-        /* Topics */
-        ros::Publisher gps_odom_pub; //debug topic - calculate odometry from gps
-
-        /* Services */
-        ros::ServiceServer init_service;
-        ros::ServiceServer computeBearing;
-
-        //callbacks
-        bool initCallback(osm_planner::newTarget::Request &req, osm_planner::newTarget::Response &res);
-        bool computeBearingCallback(osm_planner::computeBearing::Request &req, osm_planner::computeBearing::Response &res);
-        void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg);
-
-        double getAccuracy(const sensor_msgs::NavSatFix::ConstPtr& gps);
-        void allignTfWithPath(const sensor_msgs::NavSatFix::ConstPtr& msg);
-        void setTfFromGPS(const sensor_msgs::NavSatFix::ConstPtr& msg, double cov);
+        positionsData positions_;                       ///< All representations of position
+        std::shared_ptr<osm_planner::Parser> map_;      ///< A pointer to map
+        double footway_width_;                          ///< Footway witdh
+        std::string name_;                              ///< Just for print message
     };
-
 }
 
 #endif //OSM_LOCALIZATION_H

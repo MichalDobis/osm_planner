@@ -58,6 +58,7 @@ namespace osm_planner {
         //publishing functions
         void publishPoint(int pointID, int marker_type, double radius, geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromYaw(0));
         void publishPoint(geometry_msgs::Point point, int marker_type, double radius, geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromYaw(0));
+        void publishPoint(const OSM_NODE &node, int marker_type, double radius, geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromYaw(0));
         void publishPoint(double latitude, double longitude, int marker_type, double radius, geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromYaw(0));
 
         void publishRouteNetwork();
@@ -73,10 +74,15 @@ namespace osm_planner {
         int getNearestPointXY(double point_x, double point_y); //return OSM node ID
         OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
         nav_msgs::Path getPath(std::vector<int> nodesInPath); //get the XY coordinates from vector of IDs
+        std::string getMapFrameName();
+        double getInterpolationMaxDistance();
 
         //SETTERS
         void setStartPoint(double latitude, double longitude, double bearing); //set the zero point in cartezian coordinates
-        void setStartPoint();
+        void setStartPoint(double latitude, double longitude); //set the zero point in cartezian coordinates
+        void setStartPoint(const OSM_NODE node); //set the zero point in cartezian coordinates
+        void setStartPoint(int id);
+        void setRandomStartPoint();
         void setNewMap(std::string xml);
         void setTypeOfWays(std::vector<std::string> types);
 
