@@ -16,4 +16,7 @@
   <node name="osm_helper" pkg="osm_planner" type="osm_helper" ns="move_base"/>
   <!--rosparam command="load" file="$(find osm_planner)/test/test_fei.yaml"/-->
 
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find osm_planner)/rviz/osm_node.rviz" required="true"/>
+
+
 </launch>
