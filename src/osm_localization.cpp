@@ -78,7 +78,7 @@ namespace osm_planner {
         Parser::OSM_NODE node = map_->getNodeByID(positions_.id);
 
         if (positions_.is_set_from_gps){
-            return Parser::Haversine::getDistance(positions_.geo_point, node) - footway_width_;
+            return map_->getCalculator()->getDistance(positions_.geo_point, node) - footway_width_;
 
         } else{
             double x = map_->getCalculator()->getCoordinateX(node);

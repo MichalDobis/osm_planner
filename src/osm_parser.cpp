@@ -4,17 +4,24 @@
 
 
 #include <osm_planner/osm_parser.h>
+#include <osm_planner/coordinates_converters/haversine_formula.h>
+
+#include <osm_planner/coordinates_converters/wgs_84_elipsoid.h>
+
 namespace osm_planner {
 
 
     Parser::Parser() {
 
       initialize();
+      coordinatesConverter = std::make_shared<coordinates_converters::HaversineFormula>();
     }
 
     Parser::Parser(std::string file) : xml(file) {
 
         initialize();
+        coordinatesConverter = std::make_shared<coordinates_converters::HaversineFormula>();
+
     }
 
    void Parser::initialize(){
@@ -113,8 +120,8 @@ namespace osm_planner {
         node.longitude =longitude;
         node.latitude = latitude;
 
-        point.x = haversine.getCoordinateX(node);
-        point.y = haversine.getCoordinateY(node);
+        point.x = coordinatesConverter->getCoordinateX(node);
+        point.y = coordinatesConverter->getCoordinateY(node);
 
         publishPoint(point, marker_type, radius, orientation);
     }
@@ -123,16 +130,16 @@ namespace osm_planner {
     void Parser::publishPoint(int pointID, int marker_type, double radius,geometry_msgs::Quaternion orientation) {
 
         geometry_msgs::Point point;
-        point.x = haversine.getCoordinateX(nodes[pointID]);
-        point.y = haversine.getCoordinateY(nodes[pointID]);
+        point.x = coordinatesConverter->getCoordinateX(nodes[pointID]);
+        point.y = coordinatesConverter->getCoordinateY(nodes[pointID]);
         publishPoint(point, marker_type, radius, orientation);
     }
 
     void Parser::publishPoint(const OSM_NODE &node, int marker_type, double radius,geometry_msgs::Quaternion orientation) {
 
         geometry_msgs::Point point;
-        point.x = haversine.getCoordinateX(node);
-        point.y = haversine.getCoordinateY(node);
+        point.x = coordinatesConverter->getCoordinateX(node);
+        point.y = coordinatesConverter->getCoordinateY(node);
         publishPoint(point, marker_type, radius, orientation);
     }
 
@@ -152,12 +159,13 @@ namespace osm_planner {
 
             for (int j = 0; j < ways[i].nodesId.size(); j++) {
 
-                pose.pose.position.x = haversine.getCoordinateX(nodes[ways[i].nodesId[j]]);
-                pose.pose.position.y = haversine.getCoordinateY(nodes[ways[i].nodesId[j]]);
+                pose.pose.position.x = coordinatesConverter->getCoordinateX(nodes[ways[i].nodesId[j]]);
+                pose.pose.position.y = coordinatesConverter->getCoordinateY(nodes[ways[i].nodesId[j]]);
                 path.poses.push_back(pose);
 
             }
-            usleep(10000);
+
+            usleep(90000);
 
             path.header.stamp = ros::Time::now();
             path_pub.publish(path);
@@ -178,8 +186,8 @@ namespace osm_planner {
 
         for (int i = 0; i < nodesInPath.size(); i++) {
 
-            pose.pose.position.x = haversine.getCoordinateX(nodes[nodesInPath[i]]);
-            pose.pose.position.y = haversine.getCoordinateY(nodes[nodesInPath[i]]);
+            pose.pose.position.x = coordinatesConverter->getCoordinateX(nodes[nodesInPath[i]]);
+            pose.pose.position.y = coordinatesConverter->getCoordinateY(nodes[nodesInPath[i]]);
             refused_path.poses.push_back(pose);
         }
 
@@ -223,9 +231,9 @@ namespace osm_planner {
         for (int i = 0; i < nodesInPath.size(); i++) {
 
             pose.header.stamp = ros::Time::now();
-            pose.pose.position.x = haversine.getCoordinateX(nodes[nodesInPath[i]]);
-            pose.pose.position.y = haversine.getCoordinateY(nodes[nodesInPath[i]]);
-            double yaw = haversine.getBearing(nodes[nodesInPath[i]]);
+            pose.pose.position.x = coordinatesConverter->getCoordinateX(nodes[nodesInPath[i]]);
+            pose.pose.position.y = coordinatesConverter->getCoordinateY(nodes[nodesInPath[i]]);
+            double yaw = coordinatesConverter->getBearing(nodes[nodesInPath[i]]);
 
             pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
             pose.header.seq = i;
@@ -251,12 +259,12 @@ namespace osm_planner {
         point.latitude = lat;
         int id = 0;
 
-        double distance = Haversine::getDistance(point, nodes[0]);
+        double distance = coordinatesConverter->getDistance(point, nodes[0]);
         double minDistance = distance;
 
 
         for (int i = 0; i < nodes.size(); i++) {
-            distance = Haversine::getDistance(point, nodes[i]);
+            distance = coordinatesConverter->getDistance(point, nodes[i]);
 
             if (minDistance > distance) {
                 minDistance = distance;
@@ -274,14 +282,14 @@ namespace osm_planner {
         ROS_ERROR("test");
         ROS_ERROR("node size %d", nodes.size());
 
-        double x = haversine.getCoordinateX(nodes[0]);
-        double y = haversine.getCoordinateY(nodes[0]);
+        double x = coordinatesConverter->getCoordinateX(nodes[0]);
+        double y = coordinatesConverter->getCoordinateY(nodes[0]);
         double minDistance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
 
         ROS_ERROR("min distance calcaulted");
         for (int i = 0; i < nodes.size(); i++) {
-            x = haversine.getCoordinateX(nodes[i]);
-            y = haversine.getCoordinateY(nodes[i]);
+            x = coordinatesConverter->getCoordinateX(nodes[i]);
+            y = coordinatesConverter->getCoordinateY(nodes[i]);
 
 
             double distance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
@@ -295,9 +303,9 @@ namespace osm_planner {
     }
 
     //get distance and bearing calculator
-    Parser::Haversine *Parser::getCalculator(){
+    std::shared_ptr<coordinates_converters::CoordinatesConverterBase> Parser::getCalculator(){
 
-        return &haversine;
+        return coordinatesConverter;
     }
 
 //return OSM NODE, which contains geographics coordinates
@@ -310,31 +318,31 @@ namespace osm_planner {
 
    void Parser::setStartPoint(double latitude, double longitude, double bearing) {
 
-        haversine.setOrigin(latitude, longitude);
-        haversine.setOffset(bearing);
+        coordinatesConverter->setOrigin(latitude, longitude);
+        coordinatesConverter->setOffset(bearing);
    }
 
     void Parser::setStartPoint(double latitude, double longitude) {
 
-        haversine.setOrigin(latitude, longitude);
+        coordinatesConverter->setOrigin(latitude, longitude);
     }
 
     void Parser::setStartPoint(OSM_NODE node) {
 
-        haversine.setOrigin(node.latitude, node.longitude);
+        coordinatesConverter->setOrigin(node.latitude, node.longitude);
     }
 
     void Parser::setStartPoint(int id) {
 
         OSM_NODE node = this->getNodeByID(id);
-        haversine.setOrigin(node.latitude, node.longitude);
+        coordinatesConverter->setOrigin(node.latitude, node.longitude);
     }
 
     //set random start pose
    void Parser::setRandomStartPoint(){
 
        int id =  (int) (((double)rand() / RAND_MAX) * size_of_nodes);
-       haversine.setOrigin(nodes[id].latitude, nodes[id].longitude);
+       coordinatesConverter->setOrigin(nodes[id].latitude, nodes[id].longitude);
    }
 
    void Parser::setNewMap(std::string xml) {
@@ -549,7 +557,7 @@ namespace osm_planner {
         std::vector<OSM_NODE> new_nodes;
         OSM_NODE new_node;
 
-        double dist = Haversine::getDistance(node1, node2);
+        double dist = coordinatesConverter->getDistance(node1, node2);
       //  ROS_ERROR("dist %f", dist);
 
         int count_new_nodes = dist / interpolation_max_distance;    //calculate number of new interpolated nodes
@@ -618,7 +626,7 @@ namespace osm_planner {
             for (int j = 0; j < ways[i].nodesId.size() - 1; j++) {
 
                 //vypocita vzdialenost medzi susednimi uzlami
-                distance = Haversine::getDistance(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j + 1]]);
+                distance = coordinatesConverter->getDistance(nodes[ways[i].nodesId[j]], nodes[ways[i].nodesId[j + 1]]);
               //  ROS_INFO("[%d %d]",ways[i].nodesId[j], ways[i].nodesId[j + 1]);
               //  ROS_INFO("dist %f", distance);
 

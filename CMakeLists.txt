@@ -126,7 +126,10 @@ include_directories(
  include ${catkin_INCLUDE_DIRS} ${TinyXML_INCLUDE_DIRS}
 )
 add_library(osm_parser
-        src/osm_parser.cpp)
+        src/osm_parser.cpp
+        src/coordinates_converters/haversine_formula.cpp
+        src/coordinates_converters/wgs_84_elipsoid.cpp
+        )
 target_link_libraries(osm_parser
         ${catkin_LIBRARIES}
         )
@@ -138,7 +141,10 @@ add_library(osm_planner
         src/osm_parser.cpp
         src/osm_localization.cpp
         src/path_finder_algorithm/dijkstra.cpp
-      #  src/auto_initalization.cpp
+        src/coordinates_converters/haversine_formula.cpp
+        src/coordinates_converters/wgs_84_elipsoid.cpp
+
+        #  src/auto_initalization.cpp
         )
 target_link_libraries(osm_planner
         ${catkin_LIBRARIES}
