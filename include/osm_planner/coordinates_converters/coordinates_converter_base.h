@@ -12,6 +12,13 @@ namespace osm_planner {
 
     namespace coordinates_converters {
 
+        typedef struct GeoNode{
+            double latitude;
+            double longitude;
+            double altitude;
+            double angle;
+        } OSM_NODE;
+
         class CoordinatesConverterBase {
 
         public:
