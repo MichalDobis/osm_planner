@@ -12,12 +12,12 @@ namespace osm_planner {
 
     namespace coordinates_converters {
 
-        typedef struct GeoNode{
-            double latitude;
-            double longitude;
-            double altitude;
-            double angle;
-        } OSM_NODE;
+           typedef struct GeoNode {
+                double latitude;
+                double longitude;
+                double altitude;
+                double angle;
+            };
 
         class CoordinatesConverterBase {
 
@@ -66,47 +66,74 @@ namespace osm_planner {
             };
 
             template<class N>
-            double getCoordinateX(N node) {
-
+            std::vector<double> getCoordinates(N node) {
                 double dist = getDistance(origin_, node);
                 double bearing = getBearing(origin_, node);
-                return sin(bearing + offset_) * dist;
+                return {sin(bearing + offset_) * dist, cos(bearing + offset_) * dist};
+            };
+
+            template<class N1, class N2>
+            std::vector<double> getCoordinates(N1 node1, N2 node2) {
+                double dist = getDistance(node1, node2);
+                double bearing = getBearing(node1, node2);
+                return {sin(bearing + offset_) * dist, cos(bearing + offset_) * dist};
+            };
+
+            template<class N>
+            double getCoordinateX(N node) {
+		        return getCoordinates(node).at(0);
             };
 
             template<class N1, class N2>
             double getCoordinateX(N1 node1, N2 node2) {
+                return getCoordinates(node1, node2).at(0);
+            };
 
-                double dist = getDistance(node1, node2);
-                double bearing = getBearing(node1, node2);
-                return sin(bearing + OFFSET) * dist;
+            double getCoordinateX(double latitude, double longitude) {
+                GeoNode node;
+                node.latitude = latitude;
+                node.longitude = longitude;
+              	return getCoordinateX(node);
+            };
+
+            double getCoordinateX(double latitude1, double longitude1, double latitude2, double longitude2) {
+                GeoNode node1, node2;
+                node1.latitude = latitude1;
+                node1.longitude = longitude1;
+                node2.latitude = latitude2;
+                node2.longitude = longitude2;
+                return getCoordinateX(node1, node2);
             };
 
             template<class N>
             double getCoordinateY(N node) {
-
-                double dist = getDistance(origin_, node);
-                double bearing = getBearing(origin_, node);
-                return cos(bearing + offset_) * dist;
+               return getCoordinates(node).at(1);
             };
 
             template<class N1, class N2>
             double getCoordinateY(N1 node1, N2 node2) {
-
-                //Haversine old method
-                double dist = getDistance(node1, node2);
-                double bearing = getBearing(node1, node2);
-                return cos(bearing + OFFSET) * dist;
+		        return getCoordinates(node1, node2).at(1);
             };
+
+            double getCoordinateY(double latitude, double longitude) {
+                GeoNode node;
+                node.latitude = latitude;
+                node.longitude = longitude;
+                return getCoordinateY(node);
+            };
+
+            double getCoordinateY(double latitude1, double longitude1, double latitude2, double longitude2) {
+                GeoNode node1, node2;
+                node1.latitude = latitude1;
+                node1.longitude = longitude1;
+                node2.latitude = latitude2;
+                node2.longitude = longitude2;
+                return getCoordinateY(node1, node2);
+            };
+
 
         protected:
-
-            struct osm_node {
-                double latitude;
-                double longitude;
-                double altitude;
-                double angle;
-            };
-            osm_node origin_;
+            GeoNode origin_;
             double offset_;
 
 
