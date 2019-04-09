@@ -132,6 +132,7 @@ add_library(osm_parser
         )
 target_link_libraries(osm_parser
         ${catkin_LIBRARIES}
+	${TinyXML_LIBRARIES}
         )
 add_dependencies(osm_parser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
@@ -148,6 +149,7 @@ add_library(osm_planner
         )
 target_link_libraries(osm_planner
         ${catkin_LIBRARIES}
+	${TinyXML_LIBRARIES}
         )
 
 add_dependencies(osm_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
