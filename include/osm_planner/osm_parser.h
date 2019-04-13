@@ -25,11 +25,6 @@ namespace osm_planner {
     class Parser {
     public:
 
-        //TODO zmazat
-        void printNodeSize(){
-            ROS_INFO("node size %d", nodes.size());
-        }
-
         typedef struct osm_node {
             double latitude;
             double longitude;

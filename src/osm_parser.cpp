@@ -279,14 +279,10 @@ namespace osm_planner {
 
         int id = 0;
 
-        ROS_ERROR("test");
-        ROS_ERROR("node size %d", nodes.size());
-
         double x = coordinatesConverter->getCoordinateX(nodes[0]);
         double y = coordinatesConverter->getCoordinateY(nodes[0]);
         double minDistance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
 
-        ROS_ERROR("min distance calcaulted");
         for (int i = 0; i < nodes.size(); i++) {
             x = coordinatesConverter->getCoordinateX(nodes[i]);
             y = coordinatesConverter->getCoordinateY(nodes[i]);
@@ -558,12 +554,11 @@ namespace osm_planner {
         OSM_NODE new_node;
 
         double dist = coordinatesConverter->getDistance(node1, node2);
-      //  ROS_ERROR("dist %f", dist);
 
         int count_new_nodes = dist / interpolation_max_distance;    //calculate number of new interpolated nodes
 
         for (int i = 0; i < count_new_nodes; i++) {
-            //weighted average. Example: when count_new_nodes = 2
+            //For example: if count_new_nodes = 2
             //1. latitude = (2 * node1.latitude - 1*node2.latitude)/3
             //2. latitude = (1 * node1.latitude - 2*node2.latitude)/3
             new_node.latitude =
