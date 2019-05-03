@@ -152,7 +152,7 @@ target_link_libraries(osm_planner
 	${TinyXML_LIBRARIES}
         )
 
-add_dependencies(osm_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(osm_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${TinyXML_LIBRARIES})
 
 add_executable(osm_planner_node src/osm_planner_node.cpp)
 target_link_libraries(osm_planner_node osm_planner  ${catkin_LIBRARIES} ${TinyXML_LIBRARIES})
