@@ -47,6 +47,15 @@ namespace osm_planner {
             int newID;
         } TRANSLATE_TABLE;
 
+
+        class NodeWithDistance : public std::pair<int, double>{
+        public:
+            NodeWithDistance(int id, double dist){first = id; second = dist;}
+            bool operator<(const NodeWithDistance& rhs) const {
+                return second < rhs.second;
+            }
+        };
+
         const static int CURRENT_POSITION_MARKER = 0;
         const static int TARGET_POSITION_MARKER = 1;
 
@@ -74,6 +83,8 @@ namespace osm_planner {
         std::shared_ptr<std::vector<std::vector<float>>> getGraphOfVertex(); //for dijkstra algorithm
         int getNearestPoint(double lat, double lon); //return OSM node ID
         int getNearestPointXY(double point_x, double point_y); //return OSM node ID
+        std::set<NodeWithDistance> getNearestPoints(double point_x, double point_y, int size); //return OSM node ID
+
         OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
         nav_msgs::Path getPath(std::vector<int> nodesInPath); //get the XY coordinates from vector of IDs
         std::string getMapFrameName();

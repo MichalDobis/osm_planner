@@ -298,6 +298,36 @@ namespace osm_planner {
         return id;
     }
 
+    std::set<Parser::NodeWithDistance> Parser::getNearestPoints(double point_x, double point_y, int size){
+        std::set<NodeWithDistance> nearest_nodes;
+
+        double x = coordinatesConverter->getCoordinateX(nodes[0]);
+        double y = coordinatesConverter->getCoordinateY(nodes[0]);
+
+        double minDistance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
+        NodeWithDistance node(0, minDistance);
+        nearest_nodes.insert(node);
+
+        for (int i = 0; i < nodes.size(); i++) {
+            x = coordinatesConverter->getCoordinateX(nodes[i]);
+            y = coordinatesConverter->getCoordinateY(nodes[i]);
+
+
+            double distance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
+            NodeWithDistance next_node(i, distance);
+
+            nearest_nodes.insert(next_node);
+
+            if (nearest_nodes.size() > size){
+                nearest_nodes.erase(std::prev(nearest_nodes.end()));
+            }
+
+        }
+        return nearest_nodes;
+
+    } //return OSM node ID
+
+
     //get distance and bearing calculator
     std::shared_ptr<coordinates_converters::CoordinatesConverterBase> Parser::getCalculator(){
 
