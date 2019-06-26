@@ -21,7 +21,7 @@ namespace osm_planner {
             n("~/Planner") {
 
         path_finder_ = std::make_shared<osm_planner::path_finder_algorithm::Dijkstra>();
-        map = std::make_shared<osm_planner::Parser>();
+        map = std::make_shared<osm_planner::Parser>(n);
         localization_source_ = std::make_shared<osm_planner::Localization>(map, "source");
         localization_target_ = std::make_shared<osm_planner::Localization>(map, "target");
 
@@ -33,7 +33,7 @@ namespace osm_planner {
             n("~"+name) {
 
         path_finder_ = std::make_shared<osm_planner::path_finder_algorithm::Dijkstra>();
-        map = std::make_shared<osm_planner::Parser>();
+        map = std::make_shared<osm_planner::Parser>(n);
         localization_source_ = std::make_shared<osm_planner::Localization>(map, "source");
         localization_target_ = std::make_shared<osm_planner::Localization>(map, "target");
 

@@ -11,25 +11,25 @@
 namespace osm_planner {
 
 
-    Parser::Parser() {
+    Parser::Parser(ros::NodeHandle &n) {
 
       initialize();
+      initialize(n);
       coordinatesConverter = std::make_shared<coordinates_converters::HaversineFormula>();
     }
 
-    Parser::Parser(std::string file) : xml(file) {
+    Parser::Parser( ros::NodeHandle &n, std::string file) : xml(file) {
 
-        initialize();
+        initialize(n);
         coordinatesConverter = std::make_shared<coordinates_converters::HaversineFormula>();
 
     }
 
-   void Parser::initialize(){
-
-        ros::NodeHandle n("~/Planner");
+   void Parser::initialize(ros::NodeHandle &n){
 
         //get the parameters
         n.param<std::string>("global_frame", map_frame, "/world");
+        ROS_ERROR("Node %s has frame %s", n.getNamespace().c_str(), map_frame.c_str());
 
        //Publishers for visualization
        position_marker_pub = n.advertise<visualization_msgs::Marker>("position_marker", 5);
@@ -298,32 +298,26 @@ namespace osm_planner {
         return id;
     }
 
-    std::set<Parser::NodeWithDistance> Parser::getNearestPoints(double point_x, double point_y, int size){
+    std::vector<Parser::NodeWithDistance> Parser::getNearestPoints(double point_x, double point_y, double max_distance){
         std::set<NodeWithDistance> nearest_nodes;
 
-        double x = coordinatesConverter->getCoordinateX(nodes[0]);
-        double y = coordinatesConverter->getCoordinateY(nodes[0]);
-
-        double minDistance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
-        NodeWithDistance node(0, minDistance);
-        nearest_nodes.insert(node);
-
         for (int i = 0; i < nodes.size(); i++) {
-            x = coordinatesConverter->getCoordinateX(nodes[i]);
-            y = coordinatesConverter->getCoordinateY(nodes[i]);
 
-
+            double x = coordinatesConverter->getCoordinateX(nodes[i]);
+            double y = coordinatesConverter->getCoordinateY(nodes[i]);
             double distance = sqrt(pow(point_x - x, 2.0) + pow(point_y - y, 2.0));
-            NodeWithDistance next_node(i, distance);
-
-            nearest_nodes.insert(next_node);
-
-            if (nearest_nodes.size() > size){
-                nearest_nodes.erase(std::prev(nearest_nodes.end()));
+            if (distance <= max_distance) {
+                NodeWithDistance next_node(i, distance);
+                next_node.x = x;
+                next_node.y = y;
+                nearest_nodes.insert(next_node);
             }
 
         }
-        return nearest_nodes;
+        std::vector<NodeWithDistance> result;
+        result.assign(nearest_nodes.begin(), nearest_nodes.end());
+      //  std::copy(nearest_nodes.begin(), nearest_nodes.end(), result.begin());
+        return result;
 
     } //return OSM node ID
 

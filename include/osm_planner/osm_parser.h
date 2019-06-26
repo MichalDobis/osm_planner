@@ -54,14 +54,16 @@ namespace osm_planner {
             bool operator<(const NodeWithDistance& rhs) const {
                 return second < rhs.second;
             }
+            double x;
+            double y;
         };
 
         const static int CURRENT_POSITION_MARKER = 0;
         const static int TARGET_POSITION_MARKER = 1;
 
-        Parser(std::string xml);
+        Parser(ros::NodeHandle &n, std::string xml);
 
-        Parser();
+        Parser(ros::NodeHandle &n);
 
         //start parsing
         void parse(bool onlyFirstElement = false);
@@ -83,7 +85,7 @@ namespace osm_planner {
         std::shared_ptr<std::vector<std::vector<float>>> getGraphOfVertex(); //for dijkstra algorithm
         int getNearestPoint(double lat, double lon); //return OSM node ID
         int getNearestPointXY(double point_x, double point_y); //return OSM node ID
-        std::set<NodeWithDistance> getNearestPoints(double point_x, double point_y, int size); //return OSM node ID
+        std::vector<NodeWithDistance> getNearestPoints(double point_x, double point_y, double max_distance); //return OSM node ID
 
         OSM_NODE getNodeByID(int id);                //OSM NODE contains geogpraphics coordinates
         nav_msgs::Path getPath(std::vector<int> nodesInPath); //get the XY coordinates from vector of IDs
@@ -134,7 +136,7 @@ namespace osm_planner {
         std::vector<TRANSLATE_TABLE> table;
         std::vector<std::vector<float> > networkArray;
 
-       void initialize();
+       void initialize(ros::NodeHandle &n);
 
         void createMarkers();
 
