@@ -13,7 +13,6 @@ namespace osm_planner {
 
     Parser::Parser(ros::NodeHandle &n) {
 
-      initialize();
       initialize(n);
       coordinatesConverter = std::make_shared<coordinates_converters::HaversineFormula>();
     }
